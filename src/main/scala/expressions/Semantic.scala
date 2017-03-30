@@ -10,18 +10,7 @@ class Semantic {
 
 }
 
-object Semantic
-{
-  def main(args:Array[String]): Unit =
-  {
-    //(new Quantifier(null, null)).
-    println(Lambda(Variable("x"), Variable("y")).create(Variable("a"), Variable("c")))
-    println(substitution(
-      Variable("x"), Variable("y"),
-      Lambda(Variable("x"),
-        Application(
-          Application(Variable("x"), Variable("$x0")), Variable("y")))))
-  }
+object Semantic {
 
   def FV(t:Term):Set[String] = t match {
     case Variable(name) =>

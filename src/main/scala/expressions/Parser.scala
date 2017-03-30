@@ -15,7 +15,7 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     }
 
   /*lexical.reserved ++= ("" split " ")*/
-  lexical.delimiters ++= ("\\ => ( ) { } = . <= [ ] # := ," split ' ')
+  lexical.delimiters ++= ("\\ => ( ) { } = . <= [ ] @ := ," split ' ')
 
   type P[+T] = Parser[T]
 
@@ -43,7 +43,7 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
   def const = numericLit ^^ {n => Number(n.toInt)}
   //def application = expr~rep1{expr}
 
-  def sigma = ("#" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
+  def sigma = ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
 
   def variable : P[Variable] = ident ^^  {case i => Variable(i)}
   //type P[+T] = PackratParser[T]
@@ -64,7 +64,7 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
   //|  simpleExpr
   lazy val lambda : P[Lambda] = ("\\" ~> variable) ~ ("=>" ~> expr) ^^ Lambda
 
-  def sigma = ("#" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
+  def sigma = ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
 
   def ObjectFormation = "["~>repsep(field, ",")<~"]" ^^ {case l => l.toMap}
 
@@ -101,38 +101,6 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
 
   def simpleExpr = ident ^^ { case i => Variable(i)} | "(" ~> expr <~ ")" */
 
-  def main(args:Array[String]): Unit = {
-    println(parse("x.l.b b (d e)"))
-    //val p = parse("x.l.c.d")
-    //println(p)
-    //println(parse("x y z"))
-    //println(parse("#x=>y"))
-    println(parse("10"))
-    println(parse("([l = #x=>x].l:=[]).g<=a"))
-
-    val o1 = "(\\x=>\\y=>\\z=>x (y z)) x y z"
-    val restorable =
-      """
-      (((
-        (
-          [
-           retrive = #s1=>s1,
-           backup = #s2=>s2.retrive<=#s1=>s2,
-           value = #s3=>10
-          ].backup
-        ).value<=(#s3=>15)
-      ).backup).value<=(#s3=>25)).retrive.retrive.value"""//.retrive"""//.retrive<=#s1=>s2]"
-
-    //println(parse(restorable))
-
-    println(
-      Semantic.
-        eval(
-        parse(restorable) match {case Right(t) => t}))
-
-    println(Semantic.eval(parse(o1) match {case Right(t) => t}))
-    //println(parse("(\\x=>x) (\\y=>y)"))
-  }
 }
 
 

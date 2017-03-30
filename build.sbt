@@ -1,6 +1,9 @@
 scalaVersion := "2.11.8"
 
-libraryDependencies += "commons-io" % "commons-io" % "2.4"
+libraryDependencies ++= Seq(
+  "commons-io" % "commons-io" % "2.4",
+  "org.specs2" %% "specs2-core" % "3.8.9" % "test"
+)
 
 //libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
 
