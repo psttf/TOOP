@@ -13,9 +13,9 @@ class ParserSpec extends Specification {
       Parser.parse("10").toString must
         beEqualTo("Right(10)")
     }
-    "parse ([l = @x=>x].l:=[]).g<=a" in {
-      Parser.parse("([l = @x=>x].l:=[]).g<=a").toString must
-        beEqualTo("Right((([l = (@x=>x)].l<=(@$0=>[])).g<=a))")
+    "parse ([l = @x=>x].l:=[]).g:=a" in {
+      Parser.parse("([l = @x=>x].l:=[]).g:=a").toString must
+        beEqualTo("Right((([l = (@x=>x)].l<=(@$0=>[])).g<=(@$0=>a)))")
     }
   }
 

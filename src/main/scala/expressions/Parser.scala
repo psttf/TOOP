@@ -3,7 +3,7 @@ package expressions
 import util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.{PackratParsers, ImplicitConversions}
 
-object Parser extends StandardTokenParsers with PackratParsers with ImplicitConversions {
+object Parser extends StandardTokenParsers with ImplicitConversions with PackratParsers {
   //import AST._
 
   //import CAM.Language._
@@ -15,37 +15,92 @@ object Parser extends StandardTokenParsers with PackratParsers with ImplicitConv
     }
 
   /*lexical.reserved ++= ("" split " ")*/
-  lexical.delimiters ++= ("\\ => ( ) { } = . <= [ ] @ := ," split ' ')
+  lexical.delimiters ++= ("\\ => ( ) { } = . <= [ ] @ := , + - $" split ' ')
 
-  type P[+T] = Parser[T]
+  type P[+T] = PackratParser[T]
 
-  def expr : P[Term] = applications | operations//methodInvocation
+  lazy val expr : P[Term] = {
+    println("expr")
+    application | atomicToApplication
+  }
 
-  def applications:P[Term] = operations~rep1(operations) ^^ {case o1~o2 =>(o1/:o2)((t1:Term, t2:Term) => Application(t1, t2))}
+  lazy val atomicToApplication : P[Term] = {
+    println("atomicToApplication")
+    methodUpdate | fieldUpdate | methodInvocation |
+    arithmetic |
+    lambda | const | variable | objectFormation |
+    "(" ~> expr <~ ")"
+  }
 
-  def operations:P[Term] = methodUpdate | fieldUpdate | methodInvocation | term
+  lazy val application: P[Term] = {
+    println("applications")
+    expr ~ atomicToApplication ^^ { case t1 ~ t2 => Application(t1, t2) }
+  }
 
-  def methodUpdate = (term<~".")~(ident<~"<=")~expr ^^ {case t~l~e => MethodUpdate(t,l,e)}
+  lazy val methodUpdate = {
+    println("methodUpdate")
+    (expr<~".")~(ident<~"<=")~sigma ^^ {case t~l~e => MethodUpdate(t,l,e)}
+  }
 
-  def fieldUpdate = (term<~".")~(ident<~":=")~expr ^^
-    {case t~l~f => MethodUpdate(t, l, Sigma(Variable(Semantic.genName("", Semantic.FV(f))), f))}
+  lazy val fieldUpdate = {
+    println("fieldUpdate")
+    (expr<~".")~(ident<~":=")~expr ^^  {case t~l~f =>
+      MethodUpdate(t, l, Sigma(Variable(Semantic.genName("", Semantic.FV(f))), f))
+    }
+  }
 
-  def methodInvocation = term~rep1("."~>ident) ^^ {case t~l => (t/:l)((t, l) => MethodInvocation(t, l))}
+  lazy val methodInvocation = {
+    println("methodInvocation")
+    expr~("."~>ident) ^^ {case t~l => MethodInvocation(t, l)}
+  }
 
-  def term : P[Term] = sigma | lambda | const | variable | objectFormation | "("~>expr<~")"
 
-  def lambda = ("\\"~>ident)~("=>"~>expr) ^^ {case v~b => Lambda(Variable(v), b)} //| application
+  lazy val lambda = {
+    println("lambda")
+    ("\\"~>ident)~("=>"~>expr) ^^ {case v~b => Lambda(Variable(v), b)}
+  } //| application
 
-  def objectFormation = "["~>repsep(methodDefinition, ",")<~"]" ^^ {case methods => ObjectFormation(methods.toMap)}
+  lazy val objectFormation = {
+    println("objectFormation")
+    "["~>repsep(methodDefinition, ",")<~"]" ^^ {methods => ObjectFormation(methods.toMap)}
+  }
 
-  def methodDefinition : P[(String, Term)] = ident~("="~>sigma) ^^ {case l~s => (l, s)}
+  lazy val methodDefinition : P[(String, Term)] = {
+    println("methodDefinition")
+    ident~("="~>sigma) ^^ {case l~s => (l, s)}
+  }
 
-  def const = numericLit ^^ {n => Number(n.toInt)}
+  lazy val const = {
+    println("const")
+    numericLit ^^ {n => Number(n.toInt)}
+  }
   //def application = expr~rep1{expr}
 
-  def sigma = ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
+  lazy val sigma = {
+    println("sigma")
+    ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
+  }
 
-  def variable : P[Variable] = ident ^^  {case i => Variable(i)}
+  lazy val variable : P[Variable] = {
+    println("variable")
+    ident ^^  {i => Variable(i)}
+  }
+
+  lazy val add: P[Term] = {
+    println("ad")
+    expr ~ ("+" ~> expr) ^^ {case t1~t2 => Add(t1, t2)}
+  }
+
+  lazy val subtract: P[Term] = {
+    println("subtrac")
+    expr ~ ("-" ~> expr) ^^ {case t1~t2 => Subtract(t1, t2)}
+  }
+
+  lazy val arithmetic: P[Term] = {
+    println("arithmeti")
+    add | subtract
+  }
+
   //type P[+T] = PackratParser[T]
 
   //def program = rep1sep(expr, ";")

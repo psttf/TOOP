@@ -24,6 +24,7 @@ object Semantic {
       FV(obj) union FV(method)
     case quantifier : Quantifier[_] =>
       FV(quantifier.body) - quantifier.variable.name
+    case t: Arithmetic => t.FV
     case _ => Set()
 
   }
@@ -54,6 +55,9 @@ object Semantic {
           )
         )
       }
+    case Add(t21, t22) => Add(substitution(t1, variable, t21), substitution(t1, variable, t22))
+    case Subtract(t21, t22) => Subtract(substitution(t1, variable, t21), substitution(t1, variable, t22))
+
     case t => t
   }
   def genName(name:String, names:Set[String]):String = {
@@ -125,6 +129,43 @@ object Semantic {
       }
       else
         MethodUpdate(oV, l, m)
+
+    case Add(t1, t2) =>
+      val t1V = eval1(t1)
+      if (t1 == t1V)
+      {
+        val t2V = eval1(t2)
+        if (t2V == t2)
+        {
+          (t1V, t2V) match {
+            case (Number(n1), Number(n2)) =>
+              Number(n1+n2)
+            case _ => throw new IllegalArgumentException
+          }
+        }
+        else
+        Add(t1V, t2V)
+      } else
+      Add(t1V, t2)
+
+    case Subtract(t1, t2) =>
+      val t1V = eval1(t1)
+      if (t1 == t1V)
+      {
+        val t2V = eval1(t2)
+        if (t2V == t2)
+        {
+          (t1V, t2V) match {
+            case (Number(n1), Number(n2)) =>
+              Number(n1-n2)
+            case _ => throw new IllegalArgumentException
+          }
+        }
+        else
+        Subtract(t1V, t2V)
+      } else
+      Subtract(t1V, t2)
+
     case _ => t
   }
 }
