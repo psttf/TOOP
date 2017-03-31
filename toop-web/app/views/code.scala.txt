@@ -1,0 +1,6 @@
+(
+  [
+    x = @@ this => 0,
+    move = @@ this => \ dx => this.x := this.x + dx
+  ].move 5
+).x

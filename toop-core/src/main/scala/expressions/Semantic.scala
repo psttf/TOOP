@@ -1,14 +1,8 @@
 package expressions
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
-
 /**
  * Created by Александр on 02.03.2015.
  */
-class Semantic {
-
-
-}
 
 object Semantic {
 

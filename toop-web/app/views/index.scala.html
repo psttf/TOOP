@@ -1,0 +1,45 @@
+@(
+  evalForm : Form[String], results : List[util.Try[expressions.Term]]
+)(implicit messages: Messages)
+
+@import util.{Success, Failure}
+
+@main("Sigma Calculus Interpreter") {
+
+  @helper.form(action = routes.Application.eval()) {
+    @helper.textarea(field = evalForm("code"), '_label -> "Write some code:",
+      'style -> "font-family: Consolas, Lucida Console, monospace; width:100%; height:350px; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;")
+    <input type="submit" value="Eval  >>" class="btn" />
+  }
+
+  @if(results.nonEmpty){
+    <p>Evaluation result:</p>
+    <div class="code">
+      <ul>
+        @for(result <- results) {
+          @result match {
+            case Success(term) => {
+              <li>@term.toString</li>
+            }
+            case Failure(error) => {
+              <li class="result">@error</li>
+            }
+          }
+        }
+      </ul>
+    </div>
+  }
+
+}{
+  <script language="javascript">
+      $(".term").on("click", function(){
+    $(this).parent().next(".steps").toggle();
+    $(this).parent().next(".steps").next(".derivationTree").hide();
+  });
+  $(".type").on("click", function(){
+    $(this).parent().next(".steps").next(".derivationTree").toggle();
+    $(this).parent().next(".steps").hide();
+  })
+    $(".plus").on("click", function(){$(this).parent().children('.antecedent').toggle()})
+  </script>
+}

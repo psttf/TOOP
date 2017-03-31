@@ -1,104 +1,126 @@
 package expressions
 
+import scala.util.Try
 import util.parsing.combinator.syntactical.StandardTokenParsers
-import scala.util.parsing.combinator.{PackratParsers, ImplicitConversions}
+import scala.util.parsing.combinator.{ImplicitConversions, PackratParsers}
 
 object Parser extends StandardTokenParsers with ImplicitConversions with PackratParsers {
   //import AST._
 
   //import CAM.Language._
 
-  def parse(input: String): Either[String, Term] =
+  def parse(input: String): Try[Term] =
     phrase(expr)(new lexical.Scanner(input)) match {
-      case Success(ast, _) => Right(ast)
-      case e: NoSuccess => Left("phrase error: " + e.msg)
+      case Success(ast, _) =>
+        util.Success(ast)
+      case e: NoSuccess    =>
+        util.Failure(new Exception(s"phrase error: ${e.msg}"))
     }
 
   /*lexical.reserved ++= ("" split " ")*/
   lexical.delimiters ++= ("\\ => ( ) { } = . <= [ ] @ := , + - $" split ' ')
 
-  type P[+T] = PackratParser[T]
+  type P[+T] = Parser[T]
 
-  lazy val expr : P[Term] = {
-    println("expr")
-    application | atomicToApplication
+  lazy val expr : PackratParser[Term] = {
+//    log(
+      application | applicationOperand
+//    )("expr")
   }
 
-  lazy val atomicToApplication : P[Term] = {
-    println("atomicToApplication")
-    methodUpdate | fieldUpdate | methodInvocation |
-    arithmetic |
-    lambda | const | variable | objectFormation |
-    "(" ~> expr <~ ")"
+  /**
+   * everything except application
+   */
+  lazy val applicationOperand : P[Term] =
+  {
+    log(
+      methodUpdate | fieldUpdate | methodInvocation |
+      arithmetic |
+      lambda | const | variable | objectFormation |
+      "(" ~> expr <~ ")"
+    )("applicationOperand")
   }
 
-  lazy val application: P[Term] = {
-    println("applications")
-    expr ~ atomicToApplication ^^ { case t1 ~ t2 => Application(t1, t2) }
+  lazy val application: PackratParser[Term] = {
+    log(
+      expr ~ applicationOperand ^^ { case t1 ~ t2 => Application(t1, t2) }
+    )("applications")
   }
 
   lazy val methodUpdate = {
-    println("methodUpdate")
-    (expr<~".")~(ident<~"<=")~sigma ^^ {case t~l~e => MethodUpdate(t,l,e)}
+//    log(
+      (expr<~".")~(ident<~"<=")~sigma ^^ {case t~l~e => MethodUpdate(t,l,e)}
+//    )("methodUpdate")
   }
 
   lazy val fieldUpdate = {
-    println("fieldUpdate")
-    (expr<~".")~(ident<~":=")~expr ^^  {case t~l~f =>
-      MethodUpdate(t, l, Sigma(Variable(Semantic.genName("", Semantic.FV(f))), f))
-    }
+//    log(
+      (expr<~".")~(ident<~":=")~expr ^^  {case t~l~f =>
+        MethodUpdate(t, l, Sigma(Variable(Semantic.genName("", Semantic.FV(f))), f))
+      }
+//    )("fieldUpdate")
   }
 
   lazy val methodInvocation = {
-    println("methodInvocation")
-    expr~("."~>ident) ^^ {case t~l => MethodInvocation(t, l)}
+    log(
+      expr~("."~>ident) ^^ {case t~l => MethodInvocation(t, l)}
+    )("methodInvocation")
   }
 
 
   lazy val lambda = {
-    println("lambda")
-    ("\\"~>ident)~("=>"~>expr) ^^ {case v~b => Lambda(Variable(v), b)}
+//    log(
+      ("\\"~>ident)~("=>"~>expr) ^^ {case v~b => Lambda(Variable(v), b)}
+//    )("lambda")
   } //| application
 
   lazy val objectFormation = {
-    println("objectFormation")
-    "["~>repsep(methodDefinition, ",")<~"]" ^^ {methods => ObjectFormation(methods.toMap)}
+//    log(
+      "["~>repsep(methodDefinition, ",")<~"]" ^^ {methods => ObjectFormation(methods.toMap)}
+//    )("objectFormation")
   }
 
   lazy val methodDefinition : P[(String, Term)] = {
-    println("methodDefinition")
-    ident~("="~>sigma) ^^ {case l~s => (l, s)}
+//    log(
+      ident~("="~>sigma) ^^ {case l~s => (l, s)}
+//    )("methodDefinition")
   }
 
   lazy val const = {
-    println("const")
-    numericLit ^^ {n => Number(n.toInt)}
+//    log(
+      numericLit ^^ {n => Number(n.toInt)}
+//    )("const")
   }
   //def application = expr~rep1{expr}
 
   lazy val sigma = {
-    println("sigma")
-    ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
+//    log(
+      ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
+//    )("sigma")
   }
 
   lazy val variable : P[Variable] = {
-    println("variable")
-    ident ^^  {i => Variable(i)}
+//    log(
+      ident ^^  {i => Variable(i)}
+//    )("variable")
   }
 
   lazy val add: P[Term] = {
-    println("ad")
-    expr ~ ("+" ~> expr) ^^ {case t1~t2 => Add(t1, t2)}
+//    log(
+      expr ~ ("+" ~> expr) ^^ {case t1~t2 => Add(t1, t2)}
+//    )("add")
   }
 
   lazy val subtract: P[Term] = {
-    println("subtrac")
-    expr ~ ("-" ~> expr) ^^ {case t1~t2 => Subtract(t1, t2)}
+//    log(
+      expr ~ ("-" ~> expr) ^^ {case t1~t2 => Subtract(t1, t2)}
+//    )("subtrac")
   }
 
   lazy val arithmetic: P[Term] = {
-    println("arithmeti")
-    add | subtract
+//    log(
+      add | subtract
+//    )("arithmetic")
   }
 
   //type P[+T] = PackratParser[T]

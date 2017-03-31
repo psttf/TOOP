@@ -1,16 +1,38 @@
-scalaVersion := "2.11.8"
+import sbt.{Defaults, _}
+import Keys.{javacOptions, libraryDependencies, _}
+import play.sbt.{PlayImport, PlayScala}
+import play.PlayImport._
+import PlayKeys._
 
-libraryDependencies ++= Seq(
-  "commons-io" % "commons-io" % "2.4",
-  "org.specs2" %% "specs2-core" % "3.8.9" % "test"
+val scalaVersionValue = "2.11.8"
+
+val commons_io = "commons-io" % "commons-io" % "2.4"
+val specs2_core = "org.specs2" %% "specs2-core" % "3.8.9" % "test"
+
+val toopCore = sbt.Project(
+	id = "toop-core",
+	base = file("toop-core"),
+	settings = Defaults.defaultSettings ++ Seq(
+		sbt.Keys.version := "1.0",
+		sbt.Keys.scalaVersion := scalaVersionValue,
+		libraryDependencies ++= Seq(
+			commons_io,
+			specs2_core
+		),
+		sbt.Keys.scalacOptions in Test ++= Seq("-Yrangepos"),
+		sbt.Keys.resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
+	)
 )
 
-//libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
-
-//libraryDependencies += "org.scala-lang.modules" % "scala-parser-combinators" % "1.0.4"	
-
-//libraryDependencies += "org.scala-lang.modules" % "scala-parser-combinators_2.11" % "1.0.5"
-
-javacOptions ++= Seq("-encoding", "UTF-8")
-
-//fork in run := true
+lazy val root = sbt.Project(
+  id = "toop-web",
+  base = file("toop-web"),
+	settings = Seq(
+		scalaVersion := scalaVersionValue,
+		libraryDependencies ++= Seq(
+			jdbc,
+			cache,
+			specs2_core
+		)
+	)
+).enablePlugins(PlayScala,SbtWeb).dependsOn(toopCore)
