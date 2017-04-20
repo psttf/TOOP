@@ -24,7 +24,7 @@ object Parser extends StandardTokenParsers with ImplicitConversions with Packrat
 
   lazy val expr : PackratParser[Term] = {
 //    log(
-      application | applicationOperand
+      application | arithmetic | applicationOperand
 //    )("expr")
   }
 
@@ -33,18 +33,17 @@ object Parser extends StandardTokenParsers with ImplicitConversions with Packrat
    */
   lazy val applicationOperand : P[Term] =
   {
-    log(
+    //log(
       methodUpdate | fieldUpdate | methodInvocation |
-      arithmetic |
       lambda | const | variable | objectFormation |
       "(" ~> expr <~ ")"
-    )("applicationOperand")
+    //)("applicationOperand")
   }
 
   lazy val application: PackratParser[Term] = {
-    log(
+    //log(
       expr ~ applicationOperand ^^ { case t1 ~ t2 => Application(t1, t2) }
-    )("applications")
+    //)("applications")
   }
 
   lazy val methodUpdate = {
@@ -62,9 +61,9 @@ object Parser extends StandardTokenParsers with ImplicitConversions with Packrat
   }
 
   lazy val methodInvocation = {
-    log(
+    //log(
       expr~("."~>ident) ^^ {case t~l => MethodInvocation(t, l)}
-    )("methodInvocation")
+    //)("methodInvocation")
   }
 
 
@@ -87,16 +86,16 @@ object Parser extends StandardTokenParsers with ImplicitConversions with Packrat
   }
 
   lazy val const = {
-//    log(
+    //log(
       numericLit ^^ {n => Number(n.toInt)}
-//    )("const")
+    //)("const")
   }
   //def application = expr~rep1{expr}
 
   lazy val sigma = {
-//    log(
+    //log(
       ("@" ~> variable) ~ ("=>"~> expr ) ^^ Sigma
-//    )("sigma")
+    //)("sigma")
   }
 
   lazy val variable : P[Variable] = {
@@ -107,13 +106,19 @@ object Parser extends StandardTokenParsers with ImplicitConversions with Packrat
 
   lazy val add: P[Term] = {
 //    log(
-      expr ~ ("+" ~> expr) ^^ {case t1~t2 => Add(t1, t2)}
+      expr ~ rep1("+" ~> applicationOperand) ^^ {
+        case t1~t2 =>
+          t2.foldLeft(t1)((t21, t22) => Add(t21, t22))
+      }
 //    )("add")
   }
 
   lazy val subtract: P[Term] = {
 //    log(
-      expr ~ ("-" ~> expr) ^^ {case t1~t2 => Subtract(t1, t2)}
+      expr ~ rep1("-" ~> applicationOperand) ^^ {
+        case t1~t2 =>
+        t2.foldLeft(t1)((t21, t22) => Subtract(t21, t22))
+      }
 //    )("subtrac")
   }
 
