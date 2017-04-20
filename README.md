@@ -12,6 +12,9 @@ and is used during the Object-Oriented Programming MSc course
 at the Cybernetics dept. of
 [NRNU MEPhI](https://eng.mephi.ru/).
 
+Implementation language is [Scala](http://www.scala-lang.org/) and
+the project is built with [sbt](http://www.scala-sbt.org/).
+
 ## Alternatives
 
 We've found the following alternative interpreters:
