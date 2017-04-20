@@ -1,7 +1,7 @@
 import sbt.{Defaults, _}
 import Keys.{javacOptions, libraryDependencies, _}
 import play.sbt.{PlayImport, PlayScala}
-import play.PlayImport._
+import play.sbt.PlayImport._
 import PlayKeys._
 
 val scalaVersionValue = "2.11.8"
@@ -20,7 +20,8 @@ val toopCore = sbt.Project(
 			specs2_core
 		),
 		sbt.Keys.scalacOptions in Test ++= Seq("-Yrangepos"),
-		sbt.Keys.resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
+		sbt.Keys.resolvers ++=
+			Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
 	)
 )
 
@@ -33,6 +34,7 @@ lazy val root = sbt.Project(
 			jdbc,
 			cache,
 			specs2_core
-		)
+		),
+		routesGenerator := StaticRoutesGenerator
 	)
 ).enablePlugins(PlayScala,SbtWeb).dependsOn(toopCore)
