@@ -4,7 +4,7 @@ import play.sbt.{PlayImport, PlayScala}
 import play.sbt.PlayImport._
 import PlayKeys._
 
-val scalaVersionValue = "2.11.8"
+val scalaVersionValue = "2.11.11"
 
 val commons_io = "commons-io" % "commons-io" % "2.4"
 val specs2_core = "org.specs2" %% "specs2-core" % "3.8.9" % "test"
