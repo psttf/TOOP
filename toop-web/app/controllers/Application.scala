@@ -1,5 +1,7 @@
 package controllers
 
+import javax.inject.{Singleton, Inject}
+
 import expressions.{Parser, Semantic}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -7,7 +9,8 @@ import play.api.mvc.{Action, Controller}
 import play.api.Play.current
 import play.api.i18n.Messages.Implicits._
 
-object Application extends Controller {
+@Singleton
+class Application @Inject() (implicit webJarAssets: WebJarAssets) extends Controller {
 
   val evalForm = Form(
     "code" -> text

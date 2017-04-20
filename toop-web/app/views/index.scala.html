@@ -1,6 +1,6 @@
 @(
   evalForm : Form[String], results : List[util.Try[expressions.Term]]
-)(implicit messages: Messages)
+)(implicit messages: Messages, webJarAssets: WebJarAssets)
 
 @import util.{Success, Failure}
 

@@ -8,6 +8,8 @@ val scalaVersionValue = "2.11.11"
 
 val commons_io = "commons-io" % "commons-io" % "2.5"
 val specs2_core = "org.specs2" %% "specs2-core" % "3.8.9" % "test"
+val webjars_play = "org.webjars" %% "webjars-play" % "2.5.0"
+val bootstrap = "org.webjars" % "bootstrap" % "2.3.2"
 
 val toopCore = sbt.Project(
 	id = "toop-core",
@@ -31,6 +33,8 @@ lazy val root = sbt.Project(
 	settings = Seq(
 		scalaVersion := scalaVersionValue,
 		libraryDependencies ++= Seq(
+			webjars_play,
+			bootstrap,
 			jdbc,
 			cache,
 			specs2_core

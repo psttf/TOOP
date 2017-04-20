@@ -1,4 +1,6 @@
-@(title: String)(content: Html)(scripts: Html)
+@(title: String)(content: Html)(scripts: Html)(implicit
+  webJarAssets: WebJarAssets
+)
 
 <!DOCTYPE html>
 
@@ -9,12 +11,11 @@
 			href="@routes.Assets.at("stylesheets/main.css")">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<!-- Bootstrap -->
-		<link href='@routes.Assets.at("stylesheets/bootstrap.min.css")' 
+		<link href='@routes.WebJarAssets.at(webJarAssets.locate("css/bootstrap.min.css"))'
 			rel="stylesheet" media="screen">
-		<link href='@routes.Assets.at("stylesheets/bootstrap-responsive.min.css")' 
+		<link
+			href='@routes.WebJarAssets.at(webJarAssets.locate("css/bootstrap-responsive.min.css"))'
 			rel="stylesheet" media="screen">
-		<link href='@routes.Assets.at("stylesheets/opentip.css")' rel='stylesheet'
-		  type="text/css" />
 	</head>
 	<body>
 		<div class='container'>
@@ -26,7 +27,9 @@
  			@content
 		</div>
 		<script src="http://code.jquery.com/jquery.js"></script>
-		<script src='@routes.Assets.at("javascripts/bootstrap.min.js")'></script>
+		<script
+			src='@routes.WebJarAssets.at(webJarAssets.locate("js/bootstrap.min.js"))' >
+		</script>
     @scripts
 	</body>
 </html>
