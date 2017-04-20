@@ -1,5 +1,5 @@
 @(
-  evalForm : Form[String], results : List[util.Try[expressions.Term]]
+  evalForm: Form[String], results: Option[util.Try[expressions.Term]]
 )(implicit messages: Messages, webJarAssets: WebJarAssets)
 
 @import util.{Success, Failure}
@@ -7,39 +7,27 @@
 @main("Sigma Calculus Interpreter") {
 
   @helper.form(action = routes.Application.eval()) {
-    @helper.textarea(field = evalForm("code"), '_label -> "Write some code:",
-      'style -> "font-family: Consolas, Lucida Console, monospace; width:100%; height:350px; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;")
-    <input type="submit" value="Eval  >>" class="btn" />
+    <div class="form-group">
+      <label for="code">Write some code:</label>
+      <textarea id="code" name="code" class="form-control"
+        style="font-family: Consolas, Lucida Console, monospace;"
+        rows="20"
+        >@evalForm("code").value</textarea>
+    </div>
+    <input type="submit" value="Eval  >>" class="btn btn-default"/>
   }
 
   @if(results.nonEmpty){
-    <p>Evaluation result:</p>
-    <div class="code">
-      <ul>
-        @for(result <- results) {
-          @result match {
-            case Success(term) => {
-              <li>@term.toString</li>
-            }
-            case Failure(error) => {
-              <li class="result">@error</li>
-            }
-          }
-        }
-      </ul>
-    </div>
+    <hr>
+    <p style="font-weight: bold;">Evaluation result:</p>
+    <pre><!--
+   -->@for(result <- results) {<!--
+     -->@result match {
+          case Success(term) => {Success: @term.toString}
+          case Failure(error) => {Failure: @error}
+        }<!--
+   --><!--}
+ --></pre>
   }
 
-}{
-  <script language="javascript">
-      $(".term").on("click", function(){
-    $(this).parent().next(".steps").toggle();
-    $(this).parent().next(".steps").next(".derivationTree").hide();
-  });
-  $(".type").on("click", function(){
-    $(this).parent().next(".steps").next(".derivationTree").toggle();
-    $(this).parent().next(".steps").hide();
-  })
-    $(".plus").on("click", function(){$(this).parent().children('.antecedent').toggle()})
-  </script>
 }

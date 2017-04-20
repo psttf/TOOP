@@ -17,7 +17,7 @@ class Application @Inject() (implicit webJarAssets: WebJarAssets) extends Contro
   )
 
   def index = Action {
-    Ok(views.html.index(evalForm fill views.txt.code().toString, List()))
+    Ok(views.html.index(evalForm fill views.txt.code().toString, None))
   }
 
   def eval = Action { implicit request =>
@@ -25,8 +25,8 @@ class Application @Inject() (implicit webJarAssets: WebJarAssets) extends Contro
     form("code").value.map({ code =>
       val result = Parser parse code map Semantic.eval
       println(s"result = $result")
-      Ok(views.html.index(form, List(result)))
-    }) getOrElse PreconditionFailed(views.html.index(form, List()))
+      Ok(views.html.index(form, Some(result)))
+    }) getOrElse PreconditionFailed(views.html.index(form, None))
   }
 
 }
