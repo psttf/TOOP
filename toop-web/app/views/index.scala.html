@@ -10,17 +10,22 @@
     <div class="form-group">
       <label for="code">Write some code:</label>
       <textarea id="code" name="code" class="form-control"
-        style="font-family: Consolas, Lucida Console, monospace;"
+        style="display: none;"
         rows="20"
         >@evalForm("code").value</textarea>
+      <div id="code-editor" style="height: 500px;" class="form-control"></div>
     </div>
+    <p style="font-size:80%; float: right; margin-top: 10px;">
+      See:
+      <a href="http://lucacardelli.name/TheoryOfObjects.html">M. Abadi, L. Cardelli. A theory of objects. – Springer Berlin, 1996.</a>
+    </p>
     <input type="submit" value="Eval  >>" class="btn btn-default"/>
   }
 
   @if(results.nonEmpty){
     <hr>
-    <p style="font-weight: bold;">Evaluation result:</p>
-    <pre><!--
+    <label for="result">Evaluation result:</label>
+    <pre id="result"><!--
    -->@for(result <- results) {<!--
      -->@result match {
           case Success(term) => {Success: @term.toString}
@@ -30,4 +35,13 @@
  --></pre>
   }
 
+}{
+  <script language="JavaScript">
+    var editor = ace.edit("code-editor");
+    var textarea = $('textarea[name="code"]').hide();
+    editor.getSession().setValue(textarea.val());
+    editor.getSession().on('change', function(){
+      textarea.val(editor.getSession().getValue());
+    });
+  </script>
 }
