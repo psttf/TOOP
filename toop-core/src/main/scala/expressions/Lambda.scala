@@ -7,4 +7,6 @@ case class Lambda(override val variable:Variable, override val body:Term) extend
   override def create(variable: Variable, body: Term): Lambda = Lambda(variable, body)
 
   override def toString = "(\\"+variable+"=>"+body+")"
+
+  override val FV = body.FV - variable
 }
