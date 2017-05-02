@@ -2,25 +2,27 @@ package expressions
 
 object Semantic {
 
-  def FV(t:Term):Set[String] = t match {
-    case Variable(name) =>
-      Set(name)
-    case Application(t1, t2) =>
-      FV(t1) union FV(t2)
-    case ObjectFormation(methods) =>
-      methods.values.foldLeft[Set[String]](Set())((a,b) => a union FV(b))
-    case MethodInvocation(obj, _) => FV(obj)
-    case MethodUpdate(obj, _, method)  =>
-      FV(obj) union FV(method)
-    case quantifier : Quantifier[_] =>
-      FV(quantifier.body) - quantifier.variable.name
-    case t: Arithmetic => t.FV1
-    case _ => Set()
+  def FV(t:Term):Set[String] = t.FV
 
-  }
+  /*t match {
+     case Variable(name) =>
+       Set(name)
+     case Application(t1, t2) =>
+       FV(t1) union FV(t2)
+     case ObjectFormation(methods) =>
+       methods.values.foldLeft[Set[String]](Set())((a,b) => a union FV(b))
+     case MethodInvocation(obj, _) => FV(obj)
+     case MethodUpdate(obj, _, method)  =>
+       FV(obj) union FV(method)
+     case quantifier : Quantifier[_] =>
+       FV(quantifier.body) - quantifier.variable.name
+     case t: Arithmetic => t.FV1
+     case _ => Set()
+
+   }*/
 
   def substitution(t1:Term, variable:Variable, t2:Term):Term =
-    if (t2.FV(variable))
+    if (t2.FV(variable.name))
     t2 match {
     case Variable(name) if name == variable.name =>
       t1
@@ -104,7 +106,6 @@ object Semantic {
           if (methods.contains(l))
             methods(l)  match {
               case Sigma(v, b) =>
-                obj.name = v.name
                 substitution(o, v, b)
               case _ => throw new IllegalStateException
             }
@@ -121,11 +122,22 @@ object Semantic {
     case MethodUpdate(o, l, m) =>
       //println("update!", o , l , m)
       val oV = eval1(o)
-      if (oV eq o)
-      (o, m) match {
-        case (ObjectFormation(methods), Sigma(_,_)) =>
-          ObjectFormation(methods + ((l, m)))
-        case _ => throw new IllegalArgumentException
+      if (oV eq o) {
+        val mV = eval1(m)
+        if (mV ne m)
+          MethodUpdate(oV, l, mV)
+        else
+          (oV, mV) match {
+            case (ObjectFormation(methods), Sigma(_, _)) =>
+              ObjectFormation(methods + ((l, m)))
+            case (ObjectFormation(methods), field) =>
+              ObjectFormation(methods + (
+                (
+                  l,
+                  Sigma(Variable(Semantic.genName("", Semantic.FV(field))), field)
+                )))
+            case _ => throw new IllegalArgumentException
+          }
       }
       else
         MethodUpdate(oV, l, m)

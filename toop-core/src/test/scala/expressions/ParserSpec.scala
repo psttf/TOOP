@@ -15,7 +15,7 @@ class ParserSpec extends Specification {
     }
     "parse ([l = @x=>x].l:=[]).g:=a" in {
       Parser.parse("([l = @x=>x].l:=[]).g:=a").toString must
-        beEqualTo("Success((([l = (@x=>x)].l<=(@$0=>[])).g<=(@$0=>a)))")
+        beEqualTo("Success((([l = (@x=>x)].l<=[]).g<=a))")
     }
   }
 

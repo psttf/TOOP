@@ -6,5 +6,5 @@ package expressions
 case class Variable(name:String) extends Term {
   override def toString = name
 
-  override val FV = Set(this)
+  override val FV = Set(name)
 }
