@@ -6,4 +6,6 @@ package expressions
 case class MethodUpdate(obj:Term, label:String, method:Term) extends Term
 {
   override def toString = "("+obj+"."+label+"<="+method+")"
+
+  lazy override val FV = obj.FV union method.FV
 }
