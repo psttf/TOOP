@@ -123,7 +123,7 @@ object Semantic {
       //println("update!", o , l , m)
       val oV = eval1(o)
       if (oV eq o) {
-        val mV = eval1(m)
+        val mV = m // eval1(m)
         if (mV ne m)
           MethodUpdate(oV, l, mV)
         else

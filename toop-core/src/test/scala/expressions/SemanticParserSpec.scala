@@ -33,6 +33,39 @@ class SemanticParserSpec extends Specification {
         beEqualTo("(x (y z))")
     }
 
+    "eval Fibonacci" in {
+      val code =
+        """(
+          |[
+          |zero = @ this1 => [
+          |case = @ this => \ x => \ y => x,
+          |val = @ this => 2,
+          |succ = @ this => (this.case := \ x => \ y => y this).val := this.val + 1,
+          |pred = @ this => this.case (this1.zero) (\ x => x),
+          |one = @ this => this1.zero.succ,
+          |iszero = @ this => this.case (this.true) (\ x => this.false),
+          |fib = @ this => ((this.iszero.then:=1).else:=(this.pred.fib + ((this.pred.iszero.then:=1).else:=(this.pred.pred.fib)).val)).val,
+          |true = @ this =>
+          |[
+          |then = @ x => x.then,
+          |else = @ x => x.else,
+          |val = @ x => x.then
+          |],
+          |false = @ this =>
+          |[
+          |then = @ x => x.then,
+          |else = @ x => x.else,
+          |val = @ x => x.else
+          |]
+          |],
+          |main = @ this => this.zero.fib
+          |].main
+          |)
+          |""".stripMargin
+      val result = Semantic.eval(Parser parse code match {case Success(t) => t})
+      result.toString must beEqualTo("1")
+    }
+
   }
 
 }
