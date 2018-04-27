@@ -1,23 +1,22 @@
 package controllers
 
-import javax.inject.{Singleton, Inject}
-
+import javax.inject.{Inject, Singleton}
 import expressions.{Parser, Semantic}
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.mvc.{Action, Controller}
-import play.api.Play.current
-import play.api.i18n.Messages.Implicits._
+import play.api.mvc.{AbstractController, ControllerComponents}
 
 @Singleton
-class Application @Inject() (implicit webJarAssets: WebJarAssets) extends Controller {
+class Application @Inject()(cc: ControllerComponents, indexTemplate: views.html.index)
+                           (implicit assetsFinder: AssetsFinder)
+  extends AbstractController(cc) {
 
   val evalForm = Form(
     "code" -> text
   )
 
   def index = Action {
-    Ok(views.html.index(evalForm fill views.txt.code().toString, None))
+    Ok(indexTemplate(evalForm fill views.txt.code().toString, None))
   }
 
   def eval = Action { implicit request =>
@@ -25,8 +24,8 @@ class Application @Inject() (implicit webJarAssets: WebJarAssets) extends Contro
     form("code").value.map({ code =>
       val result = Parser parse code map Semantic.eval
       println(s"result = $result")
-      Ok(views.html.index(form, Some(result)))
-    }) getOrElse PreconditionFailed(views.html.index(form, None))
+      Ok(indexTemplate(form, Some(result)))
+    }) getOrElse PreconditionFailed(indexTemplate(form, None))
   }
 
 }

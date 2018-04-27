@@ -1,47 +1,43 @@
 import play.sbt.PlayImport._
 import play.sbt.PlayScala
-import sbt.Keys.{libraryDependencies, _}
-import sbt.{Defaults, _}
 
-val scalaVersionValue = "2.11.11"
+val scalaVersionValue = "2.12.5"
+val defaultScalacOptions = Seq("-deprecation", "-encoding", "utf-8")
 
-val commons_io = "commons-io" % "commons-io" % "2.5"
-val specs2_core = "org.specs2" %% "specs2-core" % "3.8.9" % "test"
-val webjars_play = "org.webjars" %% "webjars-play" % "2.5.0"
+val commons_io = "commons-io" % "commons-io" % "2.6"
+val specs2_core = "org.specs2" %% "specs2-core" % "4.1.0" % "test"
+val webjars_play = "org.webjars" %% "webjars-play" % "2.6.3"
 val bootstrap = "org.webjars" % "bootstrap" % "3.3.7"
 val ace_builds = "org.webjars.bower" % "ace-builds" % "1.2.6"
 val jquery = "org.webjars" % "jquery" % "3.2.0"
+val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
 
-val toopCore = sbt.Project(
-  id = "toop-core",
-  base = file("toop-core"),
-  settings = Defaults.defaultSettings ++ Seq(
-    sbt.Keys.version := "1.0",
-    sbt.Keys.scalaVersion := scalaVersionValue,
+lazy val toopCore = (project in file("toop-core"))
+  .settings(
+    name := "toop-core",
+    version := "1.0",
+    scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
       commons_io,
+      parserCombinators,
       specs2_core
     ),
-    sbt.Keys.scalacOptions in Test ++= Seq("-Yrangepos"),
-    sbt.Keys.resolvers ++=
-      Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
+    scalacOptions ++= defaultScalacOptions
   )
-)
 
-lazy val root = sbt.Project(
-  id = "toop-web",
-  base = file("toop-web"),
-  settings = Seq(
+lazy val toopWeb = (project in file("toop-web"))
+  .settings(
+    name := "toop-web",
+    version := "1.0",
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
       webjars_play,
       bootstrap,
       ace_builds,
       jquery,
-      jdbc,
-      cache,
+      guice,
       specs2_core
     ),
-    routesGenerator := StaticRoutesGenerator
-  )
-).enablePlugins(PlayScala,SbtWeb).dependsOn(toopCore)
+    routesGenerator := InjectedRoutesGenerator,
+    scalacOptions ++= defaultScalacOptions
+  ).enablePlugins(PlayScala).dependsOn(toopCore)
