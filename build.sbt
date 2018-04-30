@@ -1,16 +1,15 @@
 import play.sbt.PlayImport._
 import play.sbt.PlayScala
 
-val scalaVersionValue = "2.12.5"
+val scalaVersionValue = "2.12.6"
 val defaultScalacOptions = Seq("-deprecation", "-encoding", "utf-8")
 
-val commons_io = "commons-io" % "commons-io" % "2.6"
+val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
 val specs2_core = "org.specs2" %% "specs2-core" % "4.1.0"
 val webjars_play = "org.webjars" %% "webjars-play" % "2.6.3"
-val bootstrap = "org.webjars" % "bootstrap" % "3.3.7"
+val bootstrap = "org.webjars" % "bootstrap" % "4.1.0"
 val ace_builds = "org.webjars.bower" % "ace-builds" % "1.3.3"
 val jquery = "org.webjars" % "jquery" % "3.3.1"
-val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
 
 lazy val toopCore = (project in file("toop-core"))
   .settings(
@@ -18,7 +17,6 @@ lazy val toopCore = (project in file("toop-core"))
     version := "1.0",
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
-      commons_io,
       parserCombinators,
       specs2_core % Test
     ),
