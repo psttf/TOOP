@@ -1,10 +1,11 @@
+@this(main: views.html.main)
 @(
   evalForm: Form[String], results: Option[util.Try[expressions.Term]]
-)(implicit messages: Messages, webJarAssets: WebJarAssets)
+)(implicit assetsFinder: AssetsFinder)
 
 @import util.{Success, Failure}
 
-@main("Sigma Calculus Interpreter") {
+@main("Sigma Calculus Interpreter", assetsFinder) {
 
   @helper.form(action = routes.Application.eval()) {
     <div class="form-group">
@@ -35,13 +36,4 @@
  --></pre>
   }
 
-}{
-  <script language="JavaScript">
-    var editor = ace.edit("code-editor");
-    var textarea = $('textarea[name="code"]').hide();
-    editor.getSession().setValue(textarea.val());
-    editor.getSession().on('change', function(){
-      textarea.val(editor.getSession().getValue());
-    });
-  </script>
 }

@@ -1,7 +1,7 @@
 package expressions
 
 import scala.util.Try
-import util.parsing.combinator.syntactical.StandardTokenParsers
+import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.{ImplicitConversions, PackratParsers}
 
 object Parser extends StandardTokenParsers with ImplicitConversions with PackratParsers {
