@@ -1,35 +1,22 @@
 package controllers
 
-import java.util.concurrent.Executors
-
-import javax.inject.{Inject, Singleton}
 import expressions.{Parser, Semantic}
 import monix.execution.FutureUtils.extensions._
 import monix.execution.Scheduler
 import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc._
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Failure
 
-@Singleton
-class Application @Inject()(
+class ApplicationController (
   cc: ControllerComponents,
-  config: Configuration,
-  indexTemplate: views.html.index
-)(implicit assetsFinder: AssetsFinder)
+  config: Configuration
+)(implicit assetsFinder: AssetsFinder, ec: ExecutionContext)
     extends AbstractController(cc) {
-
-  val ec: ExecutionContextExecutor =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   implicit val scheduler: Scheduler = Scheduler(ec)
 
@@ -38,7 +25,7 @@ class Application @Inject()(
   )
 
   def index = Action {
-    Ok(indexTemplate(evalForm.fill(views.txt.code().toString), None))
+    Ok(views.html.index(evalForm.fill(views.txt.code().toString), None))
   }
 
   def eval: Action[AnyContent] = Action.async { implicit request =>
@@ -51,13 +38,13 @@ class Application @Inject()(
             Future.failed(new TimeoutException)
           )
         result
-          .map(parsedTerm => Ok(indexTemplate(form, Some(parsedTerm))))
+          .map(parsedTerm => Ok(views.html.index(form, Some(parsedTerm))))
           .recoverWith {
             case err: TimeoutException =>
-              Future { Ok(indexTemplate(form, Some(Failure(err)))) }
+              Future { Ok(views.html.index.apply(form, Some(Failure(err)))) }
           }
       })
-      .getOrElse(Future { PreconditionFailed(indexTemplate(form, None)) })
+      .getOrElse(Future { PreconditionFailed(views.html.index.apply(form, None)) })
   }
 
 }

@@ -1,5 +1,5 @@
-import org.specs2.mutable._
 
+import org.specs2.mutable._
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test._
@@ -24,7 +24,7 @@ class ApplicationSpec extends Specification {
       "ApplicationController" should {
 
         "render the index page" in {
-          val controller = application.injector.instanceOf[controllers.Application]
+          val controller = application.injector.instanceOf[_root_.controllers.Application]
           val result = controller.index()(FakeRequest(GET, "/"))
           status(result) must equalTo(OK)
           contentType(result) must beSome("text/html")

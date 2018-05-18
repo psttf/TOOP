@@ -7,7 +7,7 @@
 
 @main("Sigma Calculus Interpreter", assetsFinder) {
 
-  @helper.form(action = routes.Application.eval()) {
+  @helper.form(action = routes.ApplicationController.eval()) {
     <div class="form-group">
       <label for="code">Write some code:</label>
       <textarea id="code" name="code" class="form-control"

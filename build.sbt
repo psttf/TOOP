@@ -7,6 +7,8 @@ val defaultScalacOptions = Seq("-deprecation", "-encoding", "utf-8")
 val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
 val specs2_core = "org.specs2" %% "specs2-core" % "4.2.0"
 val monix = "io.monix" %% "monix" % "2.3.3"
+val macwire =  "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided"
+val rollbar = "com.rollbar" % "rollbar-java" % "1.2.0"
 val webjars_play = "org.webjars" %% "webjars-play" % "2.6.3"
 val bootstrap = "org.webjars" % "bootstrap" % "4.1.0"
 val ace_builds = "org.webjars.bower" % "ace-builds" % "1.3.3"
@@ -32,6 +34,8 @@ lazy val toopWeb = (project in file("toop-web"))
     libraryDependencies ++= Seq(
       webjars_play,
       monix,
+      macwire,
+      rollbar,
       bootstrap,
       ace_builds,
       jquery,
