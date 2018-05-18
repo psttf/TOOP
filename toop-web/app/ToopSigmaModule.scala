@@ -15,4 +15,5 @@ trait ToopSigmaModule {
 
   def config: Configuration
   def controllerComponents: ControllerComponents
+  def indexTemplate: views.html.index
 }

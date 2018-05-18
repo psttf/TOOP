@@ -14,7 +14,8 @@ import scala.util.Failure
 
 class ApplicationController (
   cc: ControllerComponents,
-  config: Configuration
+  config: Configuration,
+  indexTemplate: views.html.index
 )(implicit assetsFinder: AssetsFinder, ec: ExecutionContext)
     extends AbstractController(cc) {
 
@@ -25,7 +26,7 @@ class ApplicationController (
   )
 
   def index = Action {
-    Ok(views.html.index(evalForm.fill(views.txt.code().toString), None))
+    Ok(indexTemplate(evalForm.fill(views.txt.code().toString), None))
   }
 
   def eval: Action[AnyContent] = Action.async { implicit request =>
@@ -38,13 +39,13 @@ class ApplicationController (
             Future.failed(new TimeoutException)
           )
         result
-          .map(parsedTerm => Ok(views.html.index(form, Some(parsedTerm))))
+          .map(parsedTerm => Ok(indexTemplate(form, Some(parsedTerm))))
           .recoverWith {
             case err: TimeoutException =>
-              Future { Ok(views.html.index.apply(form, Some(Failure(err)))) }
+              Future { Ok(indexTemplate.apply(form, Some(Failure(err)))) }
           }
       })
-      .getOrElse(Future { PreconditionFailed(views.html.index.apply(form, None)) })
+      .getOrElse(Future { PreconditionFailed(indexTemplate.apply(form, None)) })
   }
 
 }

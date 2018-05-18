@@ -1,6 +1,7 @@
 import controllers.AssetsComponents
 import com.softwaremill.macwire._
 import infrastructure.{CustomHttpErrorHandler, RollbarComponents}
+import org.webjars.play.WebJarComponents
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
 import play.api.routing.Router
@@ -8,6 +9,7 @@ import play.api._
 import play.api.http.HttpErrorHandler
 import play.filters.hosts.AllowedHostsComponents
 import router.Routes
+import views.html.index
 
 import scala.concurrent.ExecutionContext
 
@@ -20,6 +22,7 @@ class ToopSigmaComponents(context: Context)
     extends BuiltInComponentsFromContext(context)
     with AssetsComponents
     with AllowedHostsComponents
+    with WebJarComponents
     with RollbarComponents
     with ToopSigmaModule {
 
@@ -35,6 +38,9 @@ class ToopSigmaComponents(context: Context)
   }
 
   override def httpFilters: Seq[EssentialFilter] = Seq(allowedHostsFilter)
+
+  val main: views.html.main = wire[views.html.main]
+  override def indexTemplate: index = wire[views.html.index]
 
   // set up logger
   LoggerConfigurator(context.environment.classLoader).foreach {
