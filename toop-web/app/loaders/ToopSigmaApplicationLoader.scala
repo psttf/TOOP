@@ -1,19 +1,21 @@
-import controllers.AssetsComponents
+package loaders
+
 import com.softwaremill.macwire._
+import controllers.AssetsComponents
 import infrastructure.{CustomHttpErrorHandler, RollbarComponents}
-import org.webjars.play.WebJarComponents
+import org.webjars.play.{RequireJS, WebJarComponents}
 import play.api.ApplicationLoader.Context
-import play.api.mvc.EssentialFilter
-import play.api.routing.Router
 import play.api._
 import play.api.http.HttpErrorHandler
+import play.api.mvc.EssentialFilter
+import play.api.routing.Router
 import play.filters.hosts.AllowedHostsComponents
 import router.Routes
 import views.html.index
 
 import scala.concurrent.ExecutionContext
 
-class ToopSigmaLoader extends ApplicationLoader {
+class ToopSigmaApplicationLoader extends ApplicationLoader {
   override def load(context: ApplicationLoader.Context): Application =
     new ToopSigmaComponents(context).application
 }
@@ -30,10 +32,13 @@ class ToopSigmaComponents(context: Context)
 
   override def config: Configuration = configuration
 
-  override lazy val httpErrorHandler: HttpErrorHandler = new CustomHttpErrorHandler(rollbar)
+  override lazy val httpErrorHandler: HttpErrorHandler =
+    new CustomHttpErrorHandler(rollbar)
 
   lazy val router: Router = {
     val prefix = "/"
+    val requireJS: RequireJS = wire[RequireJS]
+    val webjarRoutes: webjars.Routes = wire[webjars.Routes]
     wire[Routes]
   }
 

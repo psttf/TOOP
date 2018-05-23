@@ -10,4 +10,4 @@ POST        /                           controllers.ApplicationController.eval
 GET         /assets/*file               controllers.Assets.versioned(file)
 
 # WebJars
-#->          /webjars                    webjars.Routes
+->          /webjars                    webjars.Routes

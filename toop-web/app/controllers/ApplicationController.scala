@@ -12,7 +12,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Failure
 
-class ApplicationController (
+class ApplicationController(
   cc: ControllerComponents,
   config: Configuration,
   indexTemplate: views.html.index
@@ -36,7 +36,11 @@ class ApplicationController (
         val result = Future { Parser.parse(code).map(Semantic.eval) }
           .timeoutTo(
             config.get[Int]("parserFuture.timeoutInSeconds").seconds,
-            Future.failed(new TimeoutException)
+            Future.failed(
+              new TimeoutException(
+                "Ваше вычисление заняло слишком много времени и было остановлено."
+              )
+            )
           )
         result
           .map(parsedTerm => Ok(indexTemplate(form, Some(parsedTerm))))

@@ -1,3 +1,5 @@
+package loaders
+
 import controllers.{ApplicationController, AssetsFinder}
 import play.api.Configuration
 import play.api.mvc.ControllerComponents
