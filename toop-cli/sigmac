@@ -1,0 +1,3 @@
+#!/bin/bash
+exec sbt 'test:run ./sigmac.sc "$0" "$@"'
+!#
