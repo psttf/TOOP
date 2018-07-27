@@ -1,20 +1,49 @@
 package cli
 
-import scopt.OptionParser
 import java.io.File
+
+import scala.concurrent.{Future, TimeoutException}
+import scala.io.Source
+import scala.util.Failure
+import expressions.{Parser, Semantic}
 
 object Main {
   def main(args: Array[String]): Unit = {
     val parser = new scopt.OptionParser[Config]("sigmac") {
-      head("sigmac", "1.x")
+      head("sigmac", "0.1.0")
 
-      arg[File]("<file>").unbounded().text("optional unbounded args")
+      arg[File]("<file>")
+        .unbounded()
+        .required()
+        .validate(x =>
+          if (x.exists) success
+          else failure("File does not exist"))
+        .validate(x => {
+          val arr = x.getName.split('.')
+          if (arr.length > 1)
+            if (arr(1) == "sigma") success
+            else failure("Not a valid file extension")
+          else failure("Not a valid filename")
+        })
+        .action((x, c) => c.copy(files = c.files :+ x))
+        .text("Sigma script")
+
+      help("help").text("prints the usage text")
     }
 
     parser.parse(args, Config()) match {
-      case Some(config) => println("asda")
+      case Some(config) => {
+        var content = ""
+        for (line <- Source.fromFile(config.files(0)).getLines) {
+          content += line
+        }
+        val result = Parser.parse(content).map(Semantic.eval)
+        val response = result
+          .getOrElse("")
+        println(response)
+      }
 
-      case None => println("aaaa")
+      case None => println("No arguments given")
     }
   }
 }
