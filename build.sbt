@@ -49,9 +49,10 @@ lazy val toopCli = (project in file("toop-cli"))
     version := "0.1.0",
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.7.0"
+      "com.github.scopt" %% "scopt" % "3.7.0",
     ),
     scalacOptions ++= defaultScalacOptions,
-    Compile/mainClass := Some("cli.Main")
+    Compile/mainClass := Some("cli.Main"),
+    assemblyJarName in assembly := "sigmac.jar"
   )
   .dependsOn(toopCore)

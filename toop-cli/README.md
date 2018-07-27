@@ -1,8 +1,17 @@
--- ./sigmac test.sigma - start compiler
--- sbt cannot find object Main (how to pass it by the script sigmac.sc?..)
+# Run in dev mode
 
 * sbt
 * project toopCli
 * compile
-* run
+* run /path/to/file.sigma
+
+# Package jar
+
+* sbt
+* project toopCli
+* assembly
+
+# Run in prod mode
+
+* java -jar sigmac.jar /path/to/file.sigma
 
