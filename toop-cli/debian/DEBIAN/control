@@ -1,5 +1,5 @@
 Package: toop-cli
-Version: 0.1.0-1
+Version: 0.1.1-1
 Provides: toop-cli
 Maintainer: George Carpow <georgecarpow@gmail.com>
 Architecture: all

@@ -46,7 +46,7 @@ lazy val toopWeb = (project in file("toop-web"))
 lazy val toopCli = (project in file("toop-cli"))
   .settings(
     name := "toop-cli",
-    version := "0.1.0",
+    version := "0.1.1",
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
       "com.github.scopt" %% "scopt" % "3.7.0",

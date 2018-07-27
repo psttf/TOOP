@@ -10,7 +10,7 @@ import expressions.{Parser, Semantic}
 object Main {
   def main(args: Array[String]): Unit = {
     val parser = new scopt.OptionParser[Config]("sigmac") {
-      head("sigmac", "0.1.0")
+      head("sigmac", "0.1.1")
 
       arg[File]("<file>")
         .unbounded()
@@ -33,10 +33,7 @@ object Main {
 
     parser.parse(args, Config()) match {
       case Some(config) => {
-        var content = ""
-        for (line <- Source.fromFile(config.files(0)).getLines) {
-          content += line
-        }
+        var content = Source.fromFile(config.files(0)).mkString
         val result = Parser.parse(content).map(Semantic.eval)
         val response = result
           .getOrElse("")
