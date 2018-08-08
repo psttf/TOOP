@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>sigmac</id>
+    <title>Sigmac</title>
+    <version>0.1.0</version>
+    <authors>George Carpow, Pavel Shapkin, Alexander Filshin</authors>
+    <owners>George Carpow</owners>
+    <summary>Sigmac is a compiler for sigma calculus</summary>
+    <description>This is a package for Windows of Sigma Calculus compiler.</description>
+    <projectUrl>http://toop-sigma.herokuapp.com</projectUrl>
+    <tags>sigma calculus</tags>
+    <packageSourceUrl>https://github.com/psttf/TOOP</packageSourceUrl>
+    <copyright></copyright>
+    <licenseUrl>https://github.com/eakarpov/TOOP/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <iconUrl>https://github.com/eakarpov/TOOP/sigma.png</iconUrl>
+    <!--<dependencies>
+      <dependency id="" version="" />
+    </dependencies>-->
+    <releaseNotes>Initial package version</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
