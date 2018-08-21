@@ -5,6 +5,8 @@ val scalaVersionValue = "2.12.6"
 val defaultScalacOptions = Seq("-deprecation", "-encoding", "utf-8")
 
 val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
+val fastparse = "com.lihaoyi" %% "fastparse" % "1.0.0"
+val shapeless = "com.chuusai" %% "shapeless" % "2.3.3"
 val specs2_core = "org.specs2" %% "specs2-core" % "4.2.0"
 val monix = "io.monix" %% "monix" % "2.3.3"
 val webjars_play = "org.webjars" %% "webjars-play" % "2.6.3"
@@ -19,6 +21,8 @@ lazy val toopCore = (project in file("toop-core"))
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
       parserCombinators,
+      fastparse,
+      shapeless,
       specs2_core % Test
     ),
     scalacOptions ++= defaultScalacOptions
