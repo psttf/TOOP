@@ -1,8 +1,0 @@
-Package: toop-cli
-Version: 0.1.1-1
-Provides: toop-cli
-Maintainer: George Carpow <georgecarpow@gmail.com>
-Architecture: all
-Section: shells
-Description: Sigma interpreter<br>Sigma interpreter developed in NRNU MEPhI
-Depends: dpkg, openjdk-8-jre

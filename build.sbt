@@ -19,8 +19,7 @@ lazy val toopCore = (project in file("toop-core"))
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
       parserCombinators,
-      specs2_core % Test,
-      "com.lihaoyi" % "ammonite" % "1.1.2" % "test" cross CrossVersion.full
+      specs2_core % Test
     ),
     scalacOptions ++= defaultScalacOptions
   )
