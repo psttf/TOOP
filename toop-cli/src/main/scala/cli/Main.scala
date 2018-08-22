@@ -33,7 +33,7 @@ object Main {
 
     parser.parse(args, Config()) match {
       case Some(config) => {
-        var content = Source.fromFile(config.files(0)).mkString
+        val content = Source.fromFile(config.files(0)).mkString
         val result = Parser.parse(content).map(Semantic.eval)
         val response = result
           .getOrElse("")
