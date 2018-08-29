@@ -35,10 +35,11 @@ object SigmaTypedParser extends App {
   final case class Parameter(param: String, methodCall: Option[MethodCall])
   final case class Function(param1: Parameter, operator: String, param2: Parameter)
   final case class Lambda(params: Seq[String], expression: Expression)
+  final case class Type(args: Seq[Either[Type, String]])
 
   sealed trait Property
-  final case class Field(name: String, typ: String, value: Value) extends Property
-  final case class Method(methodName: String, methodType: String, contextName: String, methodBody: MethodBody) extends Property
+  final case class Field(name: String, typ: Type, value: Value) extends Property
+  final case class Method(methodName: String, methodType: Type, contextName: String, methodBody: MethodBody) extends Property
   final case class FieldUpdate(contextName: Option[String], propertyName: String, value: Value)
   sealed trait MethodTransform
   final case class MethodUpdate(oldContextName: Option[String], propertyName: String, newContextName: String, body: MethodBody) extends MethodTransform
@@ -59,8 +60,11 @@ object SigmaTypedParser extends App {
     case (param1, op, param2) => Function(param1, op, param2)
   }
   val typeName: P[String] = P(StringIn("Int", "Real", "Obj").!)
-  val methodType: P[String] = P((typeName ~ ("->" ~ typeName).rep).!)
-  val fieldType: P[String] = P(typeName)
+  val typ: P[Type] = P(("(" ~ typ ~ ")" | typeName) ~ ("->" ~ ("(" ~ typ ~ ")" | typeName)).rep).map {
+    case (inner, rest) => inner +: rest match {
+      case x: Seq[Either[Type, String]] => Type(x)
+    }
+  }
   val lambdaName: P[String] = P(CharIn(('a' to 'z') :+ '_').rep(1).!)
   val contextName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
   val propertyName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
@@ -71,13 +75,13 @@ object SigmaTypedParser extends App {
   }
   val context: P[String] = P("@" ~ contextName)
   val value: P[Value] = P(realValue | intValue | objectType | expr | stringValue).map(vv)
-  val field: P[Field] = P(propertyName ~ ":" ~ fieldType ~ ":=" ~ value).map {
+  val field: P[Field] = P(propertyName ~ ":" ~ typ ~ ":=" ~ value).map {
     case (name, typ, v) => Field(name, typ, v)
   }
   val fieldUpdate: P[FieldUpdate] = P(contextName.? ~ "." ~ propertyName ~ ":=" ~ value).map {
     case (cName, pName, v) => FieldUpdate(cName, pName, v)
   }
-  val method: P[Method] = P(propertyName ~ ":" ~ methodType ~ "=" ~ context ~ "=>" ~ methodBody).map {
+  val method: P[Method] = P(propertyName ~ ":" ~ typ ~ "=" ~ context ~ "=>" ~ methodBody).map {
     case (prop, typ, ctx, body) => Method(prop, typ, ctx, body)
   }
   val property: P[Property] = P(method | field)
@@ -107,7 +111,7 @@ object SigmaTypedParser extends App {
   }
 
   println(function.parse("x + 2"))
-  println(methodType.parse("Int -> Int -> []"))
+  println(typ.parse("Int -> (Int -> Int)"))
   println(lambdaFunction.parse("""\x => \y => x + y"""))
   println(field.parse("move_x: Int := 5"))
   println(expr.parse("3 + 5"))
@@ -115,7 +119,7 @@ object SigmaTypedParser extends App {
   println(lambdaFunction.parse("""\dx => this.x := this.x + dx"""))
   println(method.parse("""move_x: Int -> Int = @this => \dx => this.x := this.x + dx"""))
   println(methodUpdate.parse("outer.move <= @this => [x: Int := 5]"))
-  println(arguments.parse("(ass, 5)"))
+  println(arguments.parse("(arg, 5)"))
   println(methodCall.parse(".someFunction(ass, 5, 3.2)"))
   println(objectType.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
   println(sigma.parse("[x: Int := 0, move: Int -> Obj = @this => \\dx => this.x := this.x + dx].move(5).x"))
