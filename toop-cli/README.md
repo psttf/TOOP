@@ -51,7 +51,7 @@ Version: 0.1.1
 * cd ./toop-cli/windows/sigmac/src/tools
 * powershell -noexit "& ""./chocolateyUninstall.ps1"""
 
-## Manage package globally (not implemented yet)
+### Manage package globally (not implemented yet)
 
 Install:
 * choco install sigmac
