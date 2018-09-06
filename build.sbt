@@ -41,3 +41,17 @@ lazy val toopWeb = (project in file("toop-web"))
     routesGenerator := InjectedRoutesGenerator,
     scalacOptions ++= defaultScalacOptions
   ).enablePlugins(PlayScala).dependsOn(toopCore)
+
+lazy val toopCli = (project in file("toop-cli"))
+  .settings(
+    name := "toop-cli",
+    version := "0.1.1",
+    scalaVersion := scalaVersionValue,
+    libraryDependencies ++= Seq(
+      "com.github.scopt" %% "scopt" % "3.7.0",
+    ),
+    scalacOptions ++= defaultScalacOptions,
+    Compile/mainClass := Some("cli.Main"),
+    assemblyJarName in assembly := "sigmac.jar"
+  )
+  .dependsOn(toopCore)
