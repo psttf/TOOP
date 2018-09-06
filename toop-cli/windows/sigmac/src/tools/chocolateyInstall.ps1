@@ -6,7 +6,8 @@ try {
 }
 New-Item -ItemType directory -Path "C:\Program Files\sigmac"
 New-Item -ItemType directory -Path "C:\Program Files\sigmac\bin"
-Copy-Item -Path ./sigmac.jar  -Force -Destination "C:\Program Files\sigmac\sigmac.jar"
-Copy-Item -Path ./sigmac.bat -Force -Destination "C:\Program Files\sigmac\bin\sigmac.bat"
-setx PATH "$env:path;C:\Program Files\sigmac\bin" -m
+Copy-Item -Path "C:\ProgramData\chocolatey\lib\sigmac\tools\sigmac.jar"  -Force -Destination "C:\Program Files\sigmac\sigmac.jar"
+Copy-Item -Path "C:\ProgramData\chocolatey\lib\sigmac\tools\sigmac.bat" -Force -Destination "C:\Program Files\sigmac\bin\sigmac.bat"
 
+$path = [System.Environment]::GetEnvironmentVariable( 'PATH', 'Machine' )
+[System.Environment]::SetEnvironmentVariable('PATH', "$path;C:\Program Files\sigmac\bin", 'Machine' )

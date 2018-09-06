@@ -1,2 +1,1 @@
-
-java -jar "C:\Program Files\sigmac\sigmac.jar"
+java -jar "C:\Program Files\sigmac\sigmac.jar" %1

@@ -21,7 +21,7 @@ object Main {
         .validate(x => {
           val arr = x.getName.split('.')
           if (arr.length > 1)
-            if (arr(1) == "sigma") success
+            if (arr(arr.length - 1) == "sigma") success
             else failure("Not a valid file extension")
           else failure("Not a valid filename")
         })
@@ -35,9 +35,7 @@ object Main {
       case Some(config) => {
         val content = Source.fromFile(config.files(0)).mkString
         val result = Parser.parse(content).map(Semantic.eval)
-        val response = result
-          .getOrElse("")
-        println(response)
+        result.fold(err => println(Console.RED + err + Console.RESET), res => println(res))
       }
 
       case None => println("No arguments given")
