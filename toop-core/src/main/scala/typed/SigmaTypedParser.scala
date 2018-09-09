@@ -59,8 +59,10 @@ object SigmaTypedParser extends App {
   final case class Call(contextName: Option[String], propertyName: String, arguments: Seq[InputValue]) extends Transform
 
   final case class Expression(innerExpr: Option[Expression], exprWith: Seq[ExpressionWith])
-  final case class ObjectType(props: Seq[Property])
-  final case class Sigma(properties: ObjectType, transforms: Seq[Transform])
+
+  sealed trait SigmaObject
+  final case class ObjectType(props: Seq[Property]) extends SigmaObject
+  final case class Sigma(properties: SigmaObject, transforms: Transform) extends SigmaObject
 
   val operation: P[String] = P(CharIn("+", "-", "*", "/").!)
   val intValue: P[IntValue] = P(((CharIn('1' to '9') ~ CharIn('0' to '9').rep) | "0").!).map(int => IntValue(int.toInt))
@@ -117,9 +119,10 @@ object SigmaTypedParser extends App {
   val call: P[Call] = P(contextName.? ~ "." ~ propertyName ~ arguments.?).map {
     case (сName, prop, args) => Call(сName, prop, args.toSeq.flatten)
   }
-  val sigma = P(Start ~ objectType ~ (fieldUpdate | methodUpdate | call).rep ~ End).map {
+  val sigmaExpr: P[Sigma] = P((objectType | "(" ~ sigmaExpr ~ ")")  ~ (fieldUpdate | methodUpdate | call)).map {
     case (props, trans) => Sigma(props, trans)
   }
+  val sigma: P[Sigma] = P(Start ~ sigmaExpr ~ End)
   try {
     println(function.parse("x + 2"))
     println(typ.parse(": Int -> (Int -> Int)"))
@@ -133,9 +136,9 @@ object SigmaTypedParser extends App {
     println(arguments.parse("('arg', 5)"))
     println(call.parse(".someFunction(ass, 5, 3.2)"))
     println(objectType.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
-    println(sigma.parse("[x: Int := 0, move: Int -> Obj = @this => \\dx => this.x: Int := this.x + dx].move(5).x"))
-    println(sigma.parse("""[arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \n => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0).add.equals"""))
-    println(sigma.parse("[retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup.value: Int := 15.backup.value: Int := 25.retrieve.retrieve.value"))
+    println(sigma.parse("([x: Int := 0, move: Int -> Obj = @this => \\dx => this.x: Int := this.x + dx].move(5)).x"))
+    println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \n => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
+    println(sigma.parse("(((((([retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup).value: Int := 15).backup).value: Int := 25).retrieve).retrieve).value"))
     println(sigma.parse("""[zero: Obj = @global => [succ: Obj = @this => ((this.ifzero: Obj := global.false).pred: Obj := this).num: Int := this.num + 1, ifzero: Obj := global.true, num: Int := 0], true: Obj = @global => [then: Obj = @this => this, val: Obj = @this => this.then], false: Obj = @global => [else: Obj = @this => this, val: Obj = @this => this.else], prog: Int = @global => global.zero.succ.succ.succ.pred.num].prog"""))
 /*    println(sigma.parse("""[numeral: Obj = @top => [zero: Obj = @numeral => [case: Int -> (Int -> Int) -> Int = @zero => \z => \s => z, succ: Obj = @zero => (zero.case: Int -> Obj -> Obj := \z => \s => s.zero).val: Int := zero.val + 1, val: Int := 0, pred = @this => this.case(numeral.zero, \x => x),
                           |
@@ -152,9 +155,8 @@ object SigmaTypedParser extends App {
                           |    main = @ top => ((top.numeral.fib) (top.numeral.zero.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ)).val
                           |
                           |].main"""))*/
-    println(sigma.parse("[ a: Int := 0 ].a: Int := 5.a"))
+    println(sigma.parse("([a: Int := 0].a: Int := 5).a"))
   } catch {
     case e: ParseError => println(e)
-    case _ =>
   }
 }
