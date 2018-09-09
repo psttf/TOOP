@@ -41,13 +41,16 @@ object SigmaTypedParser extends App {
 
   final case class Parameter(param: ParameterValue, methodCall: Option[Call])
   final case class Function(param1: Parameter, operator: String, param2: Parameter)
-  final case class Lambda(params: Seq[String], expression: Expression)
+
   final case class Type(args: Seq[Either[Type, String]])
 
   sealed trait InputValue
   final case class StringValue(string: String) extends InputValue
   final case class IntValue(int: Int) extends InputValue
   final case class RealValue(real: Double) extends InputValue
+
+  final case class LambdaArg(argName: String, argType: Type)
+  final case class Lambda(params: Seq[Seq[LambdaArg]], body: Expression)
 
   sealed trait Property
   final case class Field(name: String, typ: Type, value: Value) extends Property
@@ -56,7 +59,7 @@ object SigmaTypedParser extends App {
   sealed trait Transform
   final case class FieldUpdate(contextName: Option[String], propertyName: String, typ: Type, value: Value) extends Transform
   final case class MethodUpdate(oldContextName: Option[String], propertyName: String, typ: Type, newContextName: String, body: MethodBody) extends Transform
-  final case class Call(contextName: Option[String], propertyName: String, arguments: Seq[InputValue]) extends Transform
+  final case class Call(contextName: Option[String], propertyName: String, arguments: Seq[Seq[InputValue]]) extends Transform
 
   final case class Expression(innerExpr: Option[Expression], exprWith: Seq[ExpressionWith])
 
@@ -74,7 +77,6 @@ object SigmaTypedParser extends App {
   val parameter: P[Parameter] = P(parameterValue ~ call.?).map {
     case (param, call) => Parameter(param, call)
   }
-  val value: P[Value] = P(objectType | inputValue | expr).map(vv)
   val function: P[Function] = P(parameter ~ operation ~ parameter).map {
     case (param1, op, param2) => Function(param1, op, param2)
   }
@@ -87,10 +89,14 @@ object SigmaTypedParser extends App {
   val lambdaName: P[String] = P(CharIn(('a' to 'z') :+ '_').rep(1).!)
   val contextName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
   val propertyName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
-  val lambda: P[String] = P("\\" ~ lambdaName.!)
+  val lambdaArg: P[LambdaArg] = P(lambdaName ~ typ).map {
+    case (name, t) => LambdaArg(name, t)
+  }
+  val lambda: P[Seq[LambdaArg]] = P("\\" ~ "(" ~ lambdaArg.rep(1) ~ ")")
   val lambdaFunction: P[Lambda] = P((lambda ~ "=>").rep(1) ~ expr).map {
     case (params, exp) => Lambda(params, exp)
   }
+  val value: P[Value] = P(objectType | lambdaFunction | inputValue | expr).map(vv)
   val context: P[String] = P("@" ~ contextName)
   val field: P[Field] = P(propertyName ~ typ ~ ":=" ~ value).map {
     case (name, t, v) => Field(name, t, v)
@@ -116,8 +122,8 @@ object SigmaTypedParser extends App {
   val arguments: P[Seq[InputValue]] = P("(" ~ inputValue ~ ("," ~ inputValue).rep ~ ")").map {
     case (head, tail) => head +: tail
   }
-  val call: P[Call] = P(contextName.? ~ "." ~ propertyName ~ arguments.?).map {
-    case (сName, prop, args) => Call(сName, prop, args.toSeq.flatten)
+  val call: P[Call] = P(contextName.? ~ "." ~ propertyName ~ arguments.rep).map {
+    case (сName, prop, args) => Call(сName, prop, args)
   }
   val sigmaExpr: P[Sigma] = P((objectType | "(" ~ sigmaExpr ~ ")")  ~ (fieldUpdate | methodUpdate | call)).map {
     case (props, trans) => Sigma(props, trans)
@@ -126,23 +132,21 @@ object SigmaTypedParser extends App {
   try {
     println(function.parse("x + 2"))
     println(typ.parse(": Int -> (Int -> Int)"))
-    println(lambdaFunction.parse("""\x => \y => x + y"""))
+    println(lambdaFunction.parse("""\(x: Int) => \(y: Int) => x + y"""))
     println(field.parse("move_x: Int := 5"))
     println(expr.parse("(this.acc: Real := this.equals).equals: Real"))
     println(fieldUpdate.parse("this.x: Int := this.x + dx"))
-    println(lambdaFunction.parse("""\dx => this.x := this.x + dx"""))
-    println(method.parse("""move_x: Int -> Int = @this => \dx => this.x := this.x + dx"""))
+    println(lambdaFunction.parse("""\(dx: Int) => this.x := this.x + dx"""))
+    println(method.parse("""move_x: Int -> Int = @this => \(dx: Int) => this.x := this.x + dx"""))
     println(methodUpdate.parse("outer.move: Obj <= @this => [x: Int := 5]"))
     println(arguments.parse("('arg', 5)"))
     println(call.parse(".someFunction(ass, 5, 3.2)"))
     println(objectType.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
-    println(sigma.parse("([x: Int := 0, move: Int -> Obj = @this => \\dx => this.x: Int := this.x + dx].move(5)).x"))
-    println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \n => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
+    println(sigma.parse("([x: Int := 0, move: Int -> Obj = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).x"))
+    println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
     println(sigma.parse("(((((([retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup).value: Int := 15).backup).value: Int := 25).retrieve).retrieve).value"))
     println(sigma.parse("""[zero: Obj = @global => [succ: Obj = @this => ((this.ifzero: Obj := global.false).pred: Obj := this).num: Int := this.num + 1, ifzero: Obj := global.true, num: Int := 0], true: Obj = @global => [then: Obj = @this => this, val: Obj = @this => this.then], false: Obj = @global => [else: Obj = @this => this, val: Obj = @this => this.else], prog: Int = @global => global.zero.succ.succ.succ.pred.num].prog"""))
-/*    println(sigma.parse("""[numeral: Obj = @top => [zero: Obj = @numeral => [case: Int -> (Int -> Int) -> Int = @zero => \z => \s => z, succ: Obj = @zero => (zero.case: Int -> Obj -> Obj := \z => \s => s.zero).val: Int := zero.val + 1, val: Int := 0, pred = @this => this.case(numeral.zero, \x => x),
-                          |
-                          |            add = @ this => \ that => this.case (that) (\x => x.add (that.succ))
+/*    println(sigma.parse("""[numeral: Obj = @top => [zero: Obj = @numeral => [case: Obj -> Obj -> Obj = @zero => \(z: Obj) => \(s: Obj) => z, succ: Obj = @zero => (zero.case: Obj -> Obj -> Obj <= @tt => \(z: Obj) => \(s: Obj) => s.zero).val: Int := zero.val + 1, val: Int := 0, pred = @this => this.case(numeral.zero)((\x: Obj -> Obj) => x), add: Obj -> Int = @this => \(that: Obj) => this.case(that)(\(x: Obj) => x.add(that.succ))
                           |
                           |        ],
                           |
