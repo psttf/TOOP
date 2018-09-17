@@ -16,19 +16,18 @@ object SigmaTypedParser extends App {
     case a: Call => Coproduct[ExpressionWith](a)
   }
 
-  type MethodBody = Lambda :+: ObjectType :+: Expression :+: CNil
+  type Body = Lambda :+: ObjectType :+: Expression :+: CNil
 
-  implicit def ff(x: Product): MethodBody = x match {
-    case a: Lambda => Coproduct[MethodBody](a)
-    case a: ObjectType => Coproduct[MethodBody](a)
-    case a: Expression => Coproduct[MethodBody](a)
+  implicit def ff(x: Product): Body = x match {
+    case a: Lambda => Coproduct[Body](a)
+    case a: ObjectType => Coproduct[Body](a)
+    case a: Expression => Coproduct[Body](a)
   }
 
-  type Value = ObjectType :+: Expression :+: InputValue :+: CNil
+  type Value = Body :+: InputValue :+: CNil
 
   implicit def vv(x: Object): Value = x match {
-    case a: ObjectType => Coproduct[Value](a)
-    case a: Expression => Coproduct[Value](a)
+    case a: Body => Coproduct[Value](a)
     case a: InputValue => Coproduct[Value](a)
   }
 
@@ -54,11 +53,11 @@ object SigmaTypedParser extends App {
 
   sealed trait Property
   final case class Field(name: String, typ: Type, value: Value) extends Property
-  final case class Method(methodName: String, methodType: Type, contextName: String, methodBody: MethodBody) extends Property
+  final case class Method(methodName: String, methodType: Type, contextName: String, methodBody: Body) extends Property
 
   sealed trait Transform
   final case class FieldUpdate(contextName: Option[String], propertyName: String, typ: Type, value: Value) extends Transform
-  final case class MethodUpdate(oldContextName: Option[String], propertyName: String, typ: Type, newContextName: String, body: MethodBody) extends Transform
+  final case class MethodUpdate(oldContextName: Option[String], propertyName: String, typ: Type, newContextName: String, body: Body) extends Transform
   final case class Call(contextName: Option[String], propertyName: String, arguments: Seq[Seq[InputValue]]) extends Transform
 
   final case class Expression(innerExpr: Option[Expression], exprWith: Seq[ExpressionWith])
@@ -75,7 +74,7 @@ object SigmaTypedParser extends App {
   val inputValue: P[InputValue] = P(realValue | intValue | stringValue)
   val parameterValue: P[ParameterValue] = P(inputValue | string).map(ll)
   val parameter: P[Parameter] = P(parameterValue ~ call.?).map {
-    case (param, call) => Parameter(param, call)
+    case (param, c) => Parameter(param, c)
   }
   val function: P[Function] = P(parameter ~ operation ~ parameter).map {
     case (param1, op, param2) => Function(param1, op, param2)
@@ -96,16 +95,16 @@ object SigmaTypedParser extends App {
   val lambdaFunction: P[Lambda] = P((lambda ~ "=>").rep(1) ~ expr).map {
     case (params, exp) => Lambda(params, exp)
   }
-  val value: P[Value] = P(objectType | lambdaFunction | inputValue | expr).map(vv)
+  val value: P[Value] = P(body | inputValue).map(vv)
   val context: P[String] = P("@" ~ contextName)
   val field: P[Field] = P(propertyName ~ typ ~ ":=" ~ value).map {
     case (name, t, v) => Field(name, t, v)
   }
   val fieldUpdate: P[FieldUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ ":=" ~ value).map {
-    case (cName, pName, typ, v) => FieldUpdate(cName, pName, typ, v)
+    case (cName, pName, t, v) => FieldUpdate(cName, pName, t, v)
   }
-  val method: P[Method] = P(propertyName ~ typ ~ "=" ~ context ~ "=>" ~ methodBody).map {
-    case (prop, t, ctx, body) => Method(prop, t, ctx, body)
+  val method: P[Method] = P(propertyName ~ typ ~ "=" ~ context ~ "=>" ~ body).map {
+    case (prop, t, ctx, b) => Method(prop, t, ctx, b)
   }
   val property: P[Property] = P(method | field)
   val objectType: P[ObjectType] = P("[" ~ property ~ ("," ~ property).rep ~ "]").map {
@@ -115,9 +114,9 @@ object SigmaTypedParser extends App {
   val expr: P[Expression] = P(("(" ~ expr ~ ")").? ~ exprWith.rep(1)).map {
     case (inner, exp) => Expression(inner, exp)
   }
-  val methodBody: P[MethodBody] = P(lambdaFunction | objectType | expr).map(ff)
-  val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ "<=" ~ context ~ "=>" ~ methodBody).map {
-    case (cName, prop, typ, ctx, body) => MethodUpdate(cName, prop, typ, ctx, body)
+  val body: P[Body] = P(lambdaFunction | objectType | expr).map(ff)
+  val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
+    case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
   val arguments: P[Seq[InputValue]] = P("(" ~ inputValue ~ ("," ~ inputValue).rep ~ ")").map {
     case (head, tail) => head +: tail
