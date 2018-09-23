@@ -16,6 +16,14 @@ object SigmaTypedParser extends App {
     case a: Call => Coproduct[ExpressionWith](a)
   }
 
+  type CutExpression = Call :+: MethodUpdate :+: FieldUpdate :+: CNil
+
+  implicit def cc(x: Product): CutExpression = x match {
+    case a: FieldUpdate => Coproduct[CutExpression](a)
+    case a: MethodUpdate => Coproduct[CutExpression](a)
+    case a: Call => Coproduct[CutExpression](a)
+  }
+
   type Body = Lambda :+: ObjectType :+: Expression :+: CNil
 
   implicit def ff(x: Product): Body = x match {
@@ -38,6 +46,15 @@ object SigmaTypedParser extends App {
     case a: String => Coproduct[ParameterValue](a)
   }
 
+  type Argument = Lambda :+: InputValue :+: StringWithCutExpr :+: ObjectTypeWithCutExpr :+: CNil
+
+  implicit def aa(x: Object): Argument = x match {
+    case a: Lambda => Coproduct[Argument](a)
+    case a: InputValue => Coproduct[Argument](a)
+    case a: StringWithCutExpr => Coproduct[Argument](a)
+    case a: ObjectTypeWithCutExpr => Coproduct[Argument](a)
+  }
+
   final case class Parameter(param: ParameterValue, methodCall: Option[Call])
   final case class Function(param1: Parameter, operator: String, param2: Parameter)
 
@@ -49,22 +66,24 @@ object SigmaTypedParser extends App {
   final case class RealValue(real: Double) extends InputValue
 
   final case class LambdaArg(argName: String, argType: Type)
-  final case class Lambda(params: Seq[Seq[LambdaArg]], body: Expression)
+  final case class Lambda(params: Seq[LambdaArg], body: Expression)
+
+  final case class StringWithCutExpr(string: String, cutExpr: Seq[CutExpression])
+  final case class ObjectTypeWithCutExpr(objectType: ObjectType, expr: Seq[CutExpression])
 
   sealed trait Property
   final case class Field(name: String, typ: Type, value: Value) extends Property
   final case class Method(methodName: String, methodType: Type, contextName: String, methodBody: Body) extends Property
 
-  sealed trait Transform
-  final case class FieldUpdate(contextName: Option[String], propertyName: String, typ: Type, value: Value) extends Transform
-  final case class MethodUpdate(oldContextName: Option[String], propertyName: String, typ: Type, newContextName: String, body: Body) extends Transform
-  final case class Call(contextName: Option[String], propertyName: String, arguments: Seq[Seq[InputValue]]) extends Transform
+  final case class FieldUpdate(contextName: Option[String], propertyName: String, typ: Type, value: Value)
+  final case class MethodUpdate(oldContextName: Option[String], propertyName: String, typ: Type, newContextName: String, body: Body)
+  final case class Call(contextName: Option[String], propertyName: String, arguments: Option[Seq[Argument]])
 
   final case class Expression(innerExpr: Option[Expression], exprWith: Seq[ExpressionWith])
 
   sealed trait SigmaObject
   final case class ObjectType(props: Seq[Property]) extends SigmaObject
-  final case class Sigma(properties: SigmaObject, transforms: Transform) extends SigmaObject
+  final case class Sigma(properties: SigmaObject, transforms: CutExpression) extends SigmaObject
 
   val operation: P[String] = P(CharIn("+", "-", "*", "/").!)
   val intValue: P[IntValue] = P(((CharIn('1' to '9') ~ CharIn('0' to '9').rep) | "0").!).map(int => IntValue(int.toInt))
@@ -91,7 +110,7 @@ object SigmaTypedParser extends App {
   val lambdaArg: P[LambdaArg] = P(lambdaName ~ typ).map {
     case (name, t) => LambdaArg(name, t)
   }
-  val lambda: P[Seq[LambdaArg]] = P("\\" ~ "(" ~ lambdaArg.rep(1) ~ ")")
+  val lambda: P[LambdaArg] = P("\\" ~ "(" ~ lambdaArg ~ ")")
   val lambdaFunction: P[Lambda] = P((lambda ~ "=>").rep(1) ~ expr).map {
     case (params, exp) => Lambda(params, exp)
   }
@@ -114,17 +133,25 @@ object SigmaTypedParser extends App {
   val expr: P[Expression] = P(("(" ~ expr ~ ")").? ~ exprWith.rep(1)).map {
     case (inner, exp) => Expression(inner, exp)
   }
+  val cutExpr: P[CutExpression] = P(fieldUpdate | methodUpdate | call).map(cc)
   val body: P[Body] = P(lambdaFunction | objectType | expr).map(ff)
   val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
     case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
-  val arguments: P[Seq[InputValue]] = P("(" ~ inputValue ~ ("," ~ inputValue).rep ~ ")").map {
+  val stringWithExpr: P[StringWithCutExpr] = P(string ~ cutExpr.rep).map {
+    case (s, cut) => StringWithCutExpr(s, cut)
+  }
+  val objectWithExpr: P[ObjectTypeWithCutExpr] = P(objectType ~ cutExpr.rep).map {
+    case (o, cut) => ObjectTypeWithCutExpr(o, cut)
+  }
+  val argument: P[Argument] = P(lambdaFunction | stringWithExpr | objectWithExpr | inputValue).map(aa)
+  val arguments: P[Seq[Argument]] = P("(" ~ argument ~ ("," ~ argument).rep ~ ")").map {
     case (head, tail) => head +: tail
   }
-  val call: P[Call] = P(contextName.? ~ "." ~ propertyName ~ arguments.rep).map {
+  val call: P[Call] = P(contextName.? ~ "." ~ propertyName ~ arguments.?).map {
     case (сName, prop, args) => Call(сName, prop, args)
   }
-  val sigmaExpr: P[Sigma] = P((objectType | "(" ~ sigmaExpr ~ ")")  ~ (fieldUpdate | methodUpdate | call)).map {
+  val sigmaExpr: P[Sigma] = P((objectType | "(" ~ sigmaExpr ~ ")")  ~ cutExpr).map {
     case (props, trans) => Sigma(props, trans)
   }
   val sigma: P[Sigma] = P(Start ~ sigmaExpr ~ End)
@@ -145,19 +172,7 @@ object SigmaTypedParser extends App {
     println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
     println(sigma.parse("(((((([retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup).value: Int := 15).backup).value: Int := 25).retrieve).retrieve).value"))
     println(sigma.parse("""[zero: Obj = @global => [succ: Obj = @this => ((this.ifzero: Obj := global.false).pred: Obj := this).num: Int := this.num + 1, ifzero: Obj := global.true, num: Int := 0], true: Obj = @global => [then: Obj = @this => this, val: Obj = @this => this.then], false: Obj = @global => [else: Obj = @this => this, val: Obj = @this => this.else], prog: Int = @global => global.zero.succ.succ.succ.pred.num].prog"""))
-/*    println(sigma.parse("""[numeral: Obj = @top => [zero: Obj = @numeral => [case: Obj -> Obj -> Obj = @zero => \(z: Obj) => \(s: Obj) => z, succ: Obj = @zero => (zero.case: Obj -> Obj -> Obj <= @tt => \(z: Obj) => \(s: Obj) => s.zero).val: Int := zero.val + 1, val: Int := 0, pred = @this => this.case(numeral.zero)((\x: Obj -> Obj) => x), add: Obj -> Int = @this => \(that: Obj) => this.case(that)(\(x: Obj) => x.add(that.succ))
-                          |
-                          |        ],
-                          |
-                          |        fib = @ numeral => \ n => n.case (numeral.zero) (\ x => x.case (n) (
-                          |
-                          |            \y => (numeral.fib x).add (numeral.fib y)))
-                          |
-                          |    ],
-                          |
-                          |    main = @ top => ((top.numeral.fib) (top.numeral.zero.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ)).val
-                          |
-                          |].main"""))*/
+    println(sigma.parse("""[numeral: Obj = @top => [zero: Obj = @numeral => [case: Obj -> Obj -> Obj = @zero => \(z: Obj) => \(s: Obj) => z, succ: Obj = @zero => (zero.case: Obj -> Obj -> Obj <= @tt => \(z: Obj) => \(s: Obj) => s.zero).val: Int := zero.val + 1, val: Int := 0, pred: Obj = @this => this.case(numeral.zero, \(x: Obj -> Obj) => x), add: Obj -> Int = @this => \(that: Obj) => this.case(that, \(x: Obj) => x.add(that.succ))], fib: Obj = @ numeral => \(n: Obj) => n.case(numeral.zero, \(x: Obj) => x.case(n, \(y: Obj) => (numeral.fib(x)).add(numeral.fib(y))))], main: Int = @ top => (top.numeral.fib(top.numeral.zero.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ.succ)).val].main"""))
     println(sigma.parse("([a: Int := 0].a: Int := 5).a"))
   } catch {
     case e: ParseError => println(e)
