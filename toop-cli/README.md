@@ -41,6 +41,10 @@ Version: 0.1.1
 
 ## For windows
 
+### Prerequisites for run sigmac
+
+* jre8
+
 ### Install package locally
 
 * cd ./toop-cli/windows/sigmac/src/tools
@@ -51,7 +55,7 @@ Version: 0.1.1
 * cd ./toop-cli/windows/sigmac/src/tools
 * powershell -noexit "& ""./chocolateyUninstall.ps1"""
 
-### Manage package globally (not implemented yet)
+### Manage package globally
 
 Install:
 * choco install sigmac
