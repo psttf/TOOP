@@ -55,8 +55,14 @@ object SigmaTypedParser extends App {
     case a: ObjectTypeWithCutExpr => Coproduct[Argument](a)
   }
 
+  sealed trait Operation
+  final case class Add() extends Operation
+  final case class Substitute() extends Operation
+  final case class Multiply() extends Operation
+  final case class Divide() extends Operation
+
   final case class Parameter(param: ParameterValue, methodCall: Option[Call])
-  final case class Function(param1: Parameter, operator: String, param2: Parameter)
+  final case class Function(param1: Parameter, operator: Operation, param2: Parameter)
 
   final case class Type(args: Seq[Either[Type, String]])
 
@@ -85,7 +91,11 @@ object SigmaTypedParser extends App {
   final case class ObjectType(props: Seq[Property]) extends SigmaObject
   final case class Sigma(properties: SigmaObject, transforms: CutExpression) extends SigmaObject
 
-  val operation: P[String] = P(CharIn("+", "-", "*", "/").!)
+  val addOperation: P[Add] = P("+".!).map(_ => Add())
+  val substituteOperation: P[Substitute] = P("-".!).map(_ => Substitute())
+  val multiplyOperation: P[Multiply] = P("*".!).map(_ => Multiply())
+  val divideOperation: P[Divide] = P("/".!).map(_ => Divide())
+  val operation: P[Operation] = P(addOperation | substituteOperation | multiplyOperation | divideOperation)
   val intValue: P[IntValue] = P(((CharIn('1' to '9') ~ CharIn('0' to '9').rep) | "0").!).map(int => IntValue(int.toInt))
   val realValue: P[RealValue] = P((intValue ~ "." ~ CharIn('0' to '9').rep(1)).!).map(real => RealValue(real.toDouble))
   val stringValue: P[StringValue] = P("'" ~ CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).! ~ "'").map(StringValue)
