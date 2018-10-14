@@ -46,13 +46,12 @@ object SigmaTypedParser extends App {
     case a: String => Coproduct[ParameterValue](a)
   }
 
-  type Argument = Lambda :+: InputValue :+: StringWithCutExpr :+: ObjectTypeWithCutExpr :+: CNil
+  type Argument = Lambda :+: InputValue :+: Expression :+: CNil
 
   implicit def aa(x: Object): Argument = x match {
     case a: Lambda => Coproduct[Argument](a)
     case a: InputValue => Coproduct[Argument](a)
-    case a: StringWithCutExpr => Coproduct[Argument](a)
-    case a: ObjectTypeWithCutExpr => Coproduct[Argument](a)
+    case a: Expression => Coproduct[Argument](a)
   }
 
   sealed trait Operation
@@ -73,9 +72,6 @@ object SigmaTypedParser extends App {
 
   final case class LambdaArg(argName: String, argType: Type)
   final case class Lambda(params: Seq[LambdaArg], body: Expression)
-
-  final case class StringWithCutExpr(string: String, cutExpr: Seq[CutExpression])
-  final case class ObjectTypeWithCutExpr(objectType: ObjectType, expr: Seq[CutExpression])
 
   sealed trait Property
   final case class Field(name: String, typ: Type, value: Value) extends Property
@@ -148,13 +144,7 @@ object SigmaTypedParser extends App {
   val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
     case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
-  val stringWithExpr: P[StringWithCutExpr] = P(string ~ cutExpr.rep).map {
-    case (s, cut) => StringWithCutExpr(s, cut)
-  }
-  val objectWithExpr: P[ObjectTypeWithCutExpr] = P(objectType ~ cutExpr.rep).map {
-    case (o, cut) => ObjectTypeWithCutExpr(o, cut)
-  }
-  val argument: P[Argument] = P(lambdaFunction | stringWithExpr | objectWithExpr | inputValue).map(aa)
+  val argument: P[Argument] = P(lambdaFunction | expr | inputValue).map(aa)
   val arguments: P[Seq[Argument]] = P("(" ~ argument ~ ("," ~ argument).rep ~ ")").map {
     case (head, tail) => head +: tail
   }
