@@ -85,14 +85,14 @@ object SigmaTypedParser extends App {
 
   sealed trait SigmaObject
   final case class ObjectType(props: Seq[Property]) extends SigmaObject
-  final case class Sigma(properties: SigmaObject, transforms: CutExpression) extends SigmaObject
+  final case class Sigma(properties: SigmaObject, call: CutExpression) extends SigmaObject
 
   val addOperation: P[Add] = P("+".!).map(_ => Add())
   val substituteOperation: P[Substitute] = P("-".!).map(_ => Substitute())
   val multiplyOperation: P[Multiply] = P("*".!).map(_ => Multiply())
   val divideOperation: P[Divide] = P("/".!).map(_ => Divide())
   val operation: P[Operation] = P(addOperation | substituteOperation | multiplyOperation | divideOperation)
-  val intValue: P[IntValue] = P(((CharIn('1' to '9') ~ CharIn('0' to '9').rep) | "0").!).map(int => IntValue(int.toInt))
+  val intValue: P[IntValue] = P(("-".? ~ (CharIn('1' to '9') ~ CharIn('0' to '9').rep) | "0").!).map(int => IntValue(int.toInt))
   val realValue: P[RealValue] = P((intValue ~ "." ~ CharIn('0' to '9').rep(1)).!).map(real => RealValue(real.toDouble))
   val stringValue: P[StringValue] = P("'" ~ CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).! ~ "'").map(StringValue)
   val string: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
@@ -155,6 +155,7 @@ object SigmaTypedParser extends App {
     case (props, trans) => Sigma(props, trans)
   }
   val sigma: P[Sigma] = P(Start ~ sigmaExpr ~ End)
+
   try {
     println(function.parse("x + 2"))
     println(typ.parse(": Int -> (Int -> Int)"))
@@ -168,7 +169,7 @@ object SigmaTypedParser extends App {
     println(arguments.parse("('arg', 5)"))
     println(call.parse(".someFunction(ass, 5, 3.2)"))
     println(objectType.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
-    println(sigma.parse("([x: Int := 0, move: Int -> Obj = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).x"))
+    println(sigma.parse("(([x: Int := 0, move: Int -> Obj = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).move(-3)).x"))
     println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
     println(sigma.parse("(((((([retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup).value: Int := 15).backup).value: Int := 25).retrieve).retrieve).value"))
     println(sigma.parse("""[zero: Obj = @global => [succ: Obj = @this => ((this.ifzero: Obj := global.false).pred: Obj := this).num: Int := this.num + 1, ifzero: Obj := global.true, num: Int := 0], true: Obj = @global => [then: Obj = @this => this, val: Obj = @this => this.then], false: Obj = @global => [else: Obj = @this => this, val: Obj = @this => this.else], prog: Int = @global => global.zero.succ.succ.succ.pred.num].prog"""))
