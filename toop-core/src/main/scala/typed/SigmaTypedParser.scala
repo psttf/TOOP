@@ -66,7 +66,6 @@ object SigmaTypedParser extends App {
   final case class Type(args: Seq[Either[Type, String]])
 
   sealed trait InputValue
-  final case class StringValue(string: String) extends InputValue
   final case class IntValue(int: Int) extends InputValue
   final case class RealValue(real: Double) extends InputValue
 
@@ -94,9 +93,8 @@ object SigmaTypedParser extends App {
   val operation: P[Operation] = P(addOperation | substituteOperation | multiplyOperation | divideOperation)
   val intValue: P[IntValue] = P(("-".? ~ (CharIn('1' to '9') ~ CharIn('0' to '9').rep) | "0").!).map(int => IntValue(int.toInt))
   val realValue: P[RealValue] = P((intValue ~ "." ~ CharIn('0' to '9').rep(1)).!).map(real => RealValue(real.toDouble))
-  val stringValue: P[StringValue] = P("'" ~ CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).! ~ "'").map(StringValue)
   val string: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
-  val inputValue: P[InputValue] = P(realValue | intValue | stringValue)
+  val inputValue: P[InputValue] = P(realValue | intValue)
   val parameterValue: P[ParameterValue] = P(inputValue | string).map(ll)
   val parameter: P[Parameter] = P(parameterValue ~ call.?).map {
     case (param, c) => Parameter(param, c)
@@ -104,7 +102,7 @@ object SigmaTypedParser extends App {
   val function: P[Function] = P(parameter ~ operation ~ parameter).map {
     case (param1, op, param2) => Function(param1, op, param2)
   }
-  val typeName: P[String] = P(StringIn("Int", "Real", "String", "Obj").!)
+  val typeName: P[String] = P(StringIn("Int", "Real", "Obj").!)
   val typ: P[Type] = P(":" ~ ("(" ~ typ ~ ")" | typeName) ~ ("->" ~ ("(" ~ typ ~ ")" | typeName)).rep).map {
     case (inner, rest) => inner +: rest match {
       case x: Seq[Either[Type, String]] => Type(x)
@@ -120,7 +118,7 @@ object SigmaTypedParser extends App {
   val lambdaFunction: P[Lambda] = P((lambda ~ "=>").rep(1) ~ expr).map {
     case (params, exp) => Lambda(params, exp)
   }
-  val value: P[Value] = P(body | inputValue).map(vv)
+  val value: P[Value] = P(inputValue | body).map(vv)
   val context: P[String] = P("@" ~ contextName)
   val field: P[Field] = P(propertyName ~ typ ~ ":=" ~ value).map {
     case (name, t, v) => Field(name, t, v)
@@ -166,7 +164,7 @@ object SigmaTypedParser extends App {
     println(lambdaFunction.parse("""\(dx: Int) => this.x := this.x + dx"""))
     println(method.parse("""move_x: Int -> Int = @this => \(dx: Int) => this.x := this.x + dx"""))
     println(methodUpdate.parse("outer.move: Obj <= @this => [x: Int := 5]"))
-    println(arguments.parse("('arg', 5)"))
+    println(arguments.parse("(-234.321, 5)"))
     println(call.parse(".someFunction(ass, 5, 3.2)"))
     println(objectType.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
     println(sigma.parse("(([x: Int := 0, move: Int -> Obj = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).move(-3)).x"))
