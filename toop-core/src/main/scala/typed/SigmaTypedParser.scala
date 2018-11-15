@@ -144,7 +144,7 @@ object SigmaTypedParser extends App {
   val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
     case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
-  val argument: P[Argument] = P(lambdaFunction | expr | inputValue).map(aa)
+  val argument: P[Argument] = P(lambdaFunction | inputValue | expr).map(aa)
   val arguments: P[Seq[Argument]] = P("(" ~ argument ~ ("," ~ argument).rep ~ ")").map {
     case (head, tail) => head +: tail
   }
