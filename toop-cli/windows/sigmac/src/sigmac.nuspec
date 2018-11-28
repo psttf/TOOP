@@ -3,7 +3,7 @@
   <metadata>
     <id>sigmac</id>
     <title>Sigmac</title>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <authors>Pavel Shapkin, Alexander Filshin, George Carpow</authors>
     <owners>George Carpow</owners>
     <summary>Sigmac is a compiler for sigma calculus</summary>

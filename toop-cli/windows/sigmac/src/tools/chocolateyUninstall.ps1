@@ -10,7 +10,7 @@ try {
 $newPath = $env:path
 $strArr = $newPath.Split(";")
 $resStr = ""
-FOR ([int]$i = 0; $i -lt $strArr.Length; $i++){
+FOR ([int]$i = 0; $i -lt $strArr.Length-1; $i++){
     IF (-not ($strArr[$i] -eq "C:\Program Files\sigmac\bin")) {
         $resStr += $strArr[$i]
         $resStr += ";"
