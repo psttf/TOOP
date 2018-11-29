@@ -3,8 +3,8 @@
   <metadata>
     <id>sigmac</id>
     <title>Sigmac</title>
-    <version>0.1.0</version>
-    <authors>George Carpow, Pavel Shapkin, Alexander Filshin</authors>
+    <version>0.1.2</version>
+    <authors>Pavel Shapkin, Alexander Filshin, George Carpow</authors>
     <owners>George Carpow</owners>
     <summary>Sigmac is a compiler for sigma calculus</summary>
     <description>This is a package for Windows of Sigma Calculus compiler.</description>
@@ -12,13 +12,14 @@
     <tags>sigma calculus</tags>
     <packageSourceUrl>https://github.com/psttf/TOOP</packageSourceUrl>
     <copyright></copyright>
-    <licenseUrl>https://github.com/eakarpov/TOOP/LICENSE</licenseUrl>
+    <licenseUrl>https://github.com/psttf/TOOP/blob/master/LICENSE</licenseUrl>
+    <docsUrl>https://github.com/psttf/TOOP/wiki</docsUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <iconUrl>https://github.com/eakarpov/TOOP/sigma.png</iconUrl>
-    <!--<dependencies>
-      <dependency id="" version="" />
-    </dependencies>-->
-    <releaseNotes>Initial package version</releaseNotes>
+    <iconUrl>https://github.com/psttf/TOOP/blob/master/sigma.png</iconUrl>
+    <dependencies>
+      <dependency id="jre8" version="8.0.181" />
+    </dependencies>
+    <releaseNotes>Fixed resource path to sigmac.jar and sigmac.bat</releaseNotes>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
