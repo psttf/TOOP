@@ -35,7 +35,7 @@ object Main {
       case Some(config) => {
         val content = Source.fromFile(config.files(0)).mkString
         val result = Parser.parse(content).map(Semantic.eval)
-        result.fold(err => println(Console.RED + err), res => println(res))
+        result.fold(err => println(Console.RED + err + Console.RESET), res => println(res))
       }
 
       case None => println("No arguments given")
