@@ -1,0 +1,3 @@
+[submodule "toop-env/sublime-plugin"]
+	path = toop-env/sublime-plugin
+	url = https://github.com/eakarpov/SigmaPlugin.git
