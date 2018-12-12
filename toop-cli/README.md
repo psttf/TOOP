@@ -35,9 +35,10 @@ Version: 0.1.1
 
 ### Build deb package
 
-* cd toop-cli
-* fakeroot dpkg --build debian
-* sudo dpkg -i debian.deb
+* cd toop-cli/debian
+* to check, maybe: chmod +x sigmac/usr/bin/sigmac
+* fakeroot dpkg --build sigmac
+* sudo dpkg -i sigmac.deb
 
 ## For windows
 
