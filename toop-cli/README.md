@@ -64,6 +64,30 @@ Install:
 Uninstall:
 * choco uninstall sigmac
 
+## For windows
+
+### Prerequisites for run sigmac
+
+* jre8
+
+### Install package locally
+
+* cd ./toop-cli/windows/sigmac/src/tools
+* powershell -noexit "& ""./chocolateyInstall.ps1"""
+
+### Uninstall package locally
+
+* cd ./toop-cli/windows/sigmac/src/tools
+* powershell -noexit "& ""./chocolateyUninstall.ps1"""
+
+### Manage package globally
+
+Install:
+* choco install sigmac
+
+Uninstall:
+* choco uninstall sigmac
+
 ## Run sigmac
 
 * sigmac /path/to/file.sigma
