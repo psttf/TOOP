@@ -7,14 +7,6 @@ try {
     exit 1
 }
 
-$newPath = $env:path
-$strArr = $newPath.Split(";")
-$resStr = ""
-FOR ([int]$i = 0; $i -lt $strArr.Length-1; $i++){
-    IF (-not ($strArr[$i] -eq "C:\Program Files\sigmac\bin")) {
-        $resStr += $strArr[$i]
-        $resStr += ";"
-    }
-}
-
-setx PATH $resStr -m
+$path = [System.Environment]::GetEnvironmentVariable( 'PATH', 'Machine' ) 
+$path = ($path.Split(';') | Where-Object { $_ -ne 'C:\Program Files\sigmac\bin' }) -join ';' 
+[System.Environment]::SetEnvironmentVariable( 'PATH', $path, 'Machine' )

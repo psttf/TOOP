@@ -4,7 +4,7 @@ BUG FIXES:
 
 * Fix - Resource path to sigmac.jar and sigmac.bat while installing package
 
-##0.1.2 (November 28,2018)
+##0.1.2 (November 28, 2018)
 
 BUG FIXES
 
