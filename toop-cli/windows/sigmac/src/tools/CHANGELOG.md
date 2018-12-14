@@ -16,5 +16,6 @@ BUG FIXES
 ENHANCEMENTS
 
 * Allow to use multiple-parted file names (test.smth.sigma along with test.sigma)
+* Change approach to manage PATH variable
 * Show colored error text if toop-core returns
 * Fix - Passing parameter with .sigma file into batch script
