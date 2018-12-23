@@ -73,7 +73,7 @@ object SigmaTypedParser extends App {
   final case class Multiply() extends Operation
   final case class Divide() extends Operation
 
-  final case class Parameter(param: ParameterValue, methodCall: Option[Call]) extends ExpressionBody
+  final case class Parameter(value: ParameterValue, methodCall: Option[Call]) extends ExpressionBody
   final case class Function(param1: Parameter, operator: Operation, param2: Parameter) extends ExpressionBody
 
   final case class Type(args: Seq[Either[Type, String]])
@@ -85,9 +85,9 @@ object SigmaTypedParser extends App {
   final case class LambdaArg(argName: String, argType: Type)
   final case class Lambda(params: Seq[LambdaArg], body: Expression) extends Body with Argument
 
-  sealed trait Property extends { val name: String }
+  sealed trait Property extends { val name: String; val typ: Type }
   final case class Field(name: String, typ: Type, value: Value) extends Property
-  final case class Method(name: String, methodType: Type, contextName: MethodCtxType, methodBody: Body) extends Property
+  final case class Method(name: String, typ: Type, context: MethodCtxType, methodBody: Body) extends Property
 
   final case class FieldUpdate(contextName: Option[String], propertyName: String, typ: Type, value: Value) extends CutExpression
   final case class MethodUpdate(oldContextName: Option[String], propertyName: String, typ: Type, newContextName: String, body: Body) extends CutExpression
@@ -169,6 +169,7 @@ object SigmaTypedParser extends App {
 
 
   val sigma1 = sigma.parse("(([x: Int := 0, move: Int -> Obj = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).move(-3)).x")
+  val sigma2 = sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals""")
 
   try {
     println(function.parse("x + 2"))
@@ -199,5 +200,6 @@ object SigmaTypedParser extends App {
   println("Calculation")
 
   new TypedCalculator().evalMain(sigma1.get.value)
+  new TypedCalculator().evalMain(sigma2.get.value)
 
 }
