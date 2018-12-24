@@ -116,7 +116,7 @@ object SigmaTypedParser extends App {
     case (param1, op, param2) => Function(param1, op, param2)
   }
   val typeName: P[String] = P(StringIn("Int", "Real", "Obj").!)
-  val typ: P[Type] = P(":" ~ ("(" ~ typ ~ ")" | typeName) ~ ("->" ~ ("(" ~ typ ~ ")" | typeName)).rep).map {
+  val typ: P[Type] = P(("(" ~ typ ~ ")" | typeName) ~ ("->" ~ ("(" ~ typ ~ ")" | typeName)).rep).map {
     case (inner, rest) => inner +: rest match {
       case x: Seq[Either[Type, String]] => Type(x)
     }
@@ -124,7 +124,7 @@ object SigmaTypedParser extends App {
   val lambdaName: P[String] = P(CharIn(('a' to 'z') :+ '_').rep(1).!)
   val contextName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
   val propertyName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z') :+ '_').rep(1).!)
-  val lambdaArg: P[LambdaArg] = P(lambdaName ~ typ).map {
+  val lambdaArg: P[LambdaArg] = P(lambdaName ~ ":" ~ typ).map {
     case (name, t) => LambdaArg(name, t)
   }
   val lambda: P[LambdaArg] = P("\\" ~ "(" ~ lambdaArg ~ ")")
@@ -133,13 +133,13 @@ object SigmaTypedParser extends App {
   }
   val value: P[Value] = P(inputValue | body)
   val context: P[String] = P("@" ~ contextName)
-  val field: P[Field] = P(propertyName ~ typ ~ ":=" ~ value).map {
+  val field: P[Field] = P(propertyName ~ ":" ~ typ ~ ":=" ~ value).map {
     case (name, t, v) => Field(name, t, v)
   }
-  val fieldUpdate: P[FieldUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ ":=" ~ value).map {
+  val fieldUpdate: P[FieldUpdate] = P(contextName.? ~ "." ~ propertyName ~ ":" ~ typ ~ ":=" ~ value).map {
     case (cName, pName, t, v) => FieldUpdate(cName, pName, t, v)
   }
-  val method: P[Method] = P(propertyName ~ typ ~ "=" ~ context ~ "=>" ~ body).map {
+  val method: P[Method] = P(propertyName ~ ":" ~ typ ~ "=" ~ context ~ "=>" ~ body).map {
     case (prop, t, ctx, b) => Method(prop, t, ctx, b)
   }
   val property: P[Property] = P(method | field)
@@ -152,7 +152,7 @@ object SigmaTypedParser extends App {
   }
   val cutExpr: P[CutExpression] = P(fieldUpdate | methodUpdate | call)
   val body: P[Body] = P(lambdaFunction | objectType | expr)
-  val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
+  val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ ":" ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
     case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
   val argument: P[Argument] = P(lambdaFunction | inputValue | expr)
@@ -173,7 +173,7 @@ object SigmaTypedParser extends App {
 
   try {
     println(function.parse("x + 2"))
-    println(typ.parse(": Int -> (Int -> Int)"))
+    println(typ.parse("Int -> (Int -> Int)"))
     println(lambdaFunction.parse("""\(x: Int) => \(y: Int) => x + y"""))
     println(field.parse("move_x: Int := 5"))
     println(expr.parse("(this.acc: Real := this.equals).equals"))
@@ -199,7 +199,7 @@ object SigmaTypedParser extends App {
   println("__________")
   println("Calculation")
 
-  new TypedCalculator().evalMain(sigma1.get.value)
-  new TypedCalculator().evalMain(sigma2.get.value)
+/*  new TypedCalculator().evalMain(sigma1.get.value)*/
+  /*new TypedCalculator().evalMain(sigma2.get.value)*/
 
 }

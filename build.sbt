@@ -1,7 +1,7 @@
 import play.sbt.PlayImport._
 import play.sbt.PlayScala
 
-val scalaVersionValue = "2.12.6"
+val scalaVersionValue = "2.12.8"
 val defaultScalacOptions = Seq("-deprecation", "-encoding", "utf-8")
 
 val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"

@@ -82,10 +82,43 @@ class TypedCalculator {
     }
   }
 
-  private def returnTypeToContextType(ret: ReturnType): ContextType = ret match {
-    case Inl(int) => Coproduct[ContextType](int)
-    case Inr(Inl(d)) => Coproduct[ContextType](d)
-    case Inr(Inr(Inl(ob))) => Coproduct[ContextType](ob)
+  private def returnTypeToContextType(ret: ReturnType): ContextType =
+    ret match {
+      case Inl(int)          => Coproduct[ContextType](int)
+      case Inr(Inl(d))       => Coproduct[ContextType](d)
+      case Inr(Inr(Inl(ob))) => Coproduct[ContextType](ob)
+    }
+
+  private def validateType(
+    typ: List[Either[Type, String]],
+    args: List[Either[Type, String]]
+  ): Unit = {
+    println(typ)
+    println(args)
+      typ match {
+        case Right(str1) :: xs =>
+          args match {
+            case Right(str2) :: ys =>
+              if (str1 != str2)
+                sys.error(s"Type $typ does not equal to $args type")
+              else ys match {
+                case list => validateType(xs, list)
+                case Nil =>
+              }
+            case Left(_) :: _ =>
+              sys.error(s"Type $typ does not equal to $args type")
+            case _ => sys.error(s"Type $str1 does not equal to $args type")
+          }
+        case Left(t1) :: xs =>
+          args match {
+            case Left(t2) :: ys =>
+              validateType(t1.args.toList, t2.args.toList)
+              validateType(xs, ys)
+            case Right(_) :: _ =>
+              sys.error(s"Type $typ does not equal to ${args.head} type")
+          }
+        case Nil => if (args.length > 1) sys.error(s"Type $typ does not equal to $args type")
+      }
   }
 
   private def evalExpr(expression: Expression): ReturnType = {
@@ -98,21 +131,23 @@ class TypedCalculator {
   }
 
   private def evalExprBodies(body: Seq[ExpressionBody]): ReturnType = {
-    body.takeRight(1).headOption.fold(Coproduct[ReturnType](0))(body => evalExprBody(body))
+    body
+      .takeRight(1)
+      .headOption
+      .fold(Coproduct[ReturnType](0))(body => evalExprBody(body))
   }
 
   private def evalExprBody(body: ExpressionBody): ReturnType = {
-    println(s"eval expr body = $body")
     body match {
       case fu: FieldUpdate =>
         val ctx = context(fu.contextName.getOrElse("_")).last
-        println(context)
         ctx match {
           case Inr(Inl(ob)) =>
             val method: Property = findProperty(ob, fu.propertyName)
               .getOrElse(sys.error(s"Field ${fu.propertyName} can't be found"))
-            println(method)
-            println(ob)
+            println(Type(Seq(Right("sss"))))
+            println(fu.typ)
+            validateType(method.typ.args.toList, fu.typ.args.toList)
             val newValue = fu.value match {
               case e: Expression => inputValueFromReturn(evalExpr(e))
               case _             => IntValue(0)
@@ -127,6 +162,7 @@ class TypedCalculator {
           case Inr(Inl(ob)) =>
             val method: Property = findProperty(ob, mu.propertyName)
               .getOrElse(sys.error(s"Method ${mu.propertyName} can't be found"))
+            validateType(method.typ.args.toList, mu.typ.args.toList)
             val newMethod = method match {
               case m: Method => getNewMethod(m, ob)
               case _         => sys.error("expected to find method")
@@ -159,17 +195,18 @@ class TypedCalculator {
       case Inr(Inl(str)) =>
         val res = context(str).last
         res match {
-          case Inr(Inl(ob)) => return ob
-          case Inr(Inr(Inr(Inr(Inl(int))))) => return int
-          case Inr(Inr(Inr(Inr(Inr(Inl(d)))))) => return d
-          case Inr(Inr(Inr(Inr(Inr(Inr(Inl(iv))))))) => return iv.int
+          case Inr(Inl(ob))                               => return ob
+          case Inr(Inr(Inr(Inr(Inl(int)))))               => return int
+          case Inr(Inr(Inr(Inr(Inr(Inl(d))))))            => return d
+          case Inr(Inr(Inr(Inr(Inr(Inr(Inl(iv)))))))      => return iv.int
           case Inr(Inr(Inr(Inr(Inr(Inr(Inr(Inl(rv)))))))) => return rv.real
-          case _ => sys.error("Not a valid type")
+          case _                                          => sys.error("Not a valid type")
         }
-      case Inl(inp) => inp match {
-        case IntValue(i) => return i
-        case RealValue(r) => return r
-      }
+      case Inl(inp) =>
+        inp match {
+          case IntValue(i)  => return i
+          case RealValue(r) => return r
+        }
     }
     val arr: ArrayBuffer[ContextType] = context.getOrElse(
       param.value.select.head.asInstanceOf[String],
@@ -208,7 +245,6 @@ class TypedCalculator {
   }
 
   private def methodCall(methodCall: Call): ReturnType = {
-    println(methodCall)
     val args: Seq[Argument] = methodCall.arguments.getOrElse(Nil).map {
       case l: Lambda      => l
       case iv: InputValue => iv
@@ -235,7 +271,7 @@ class TypedCalculator {
               case _ =>
             }
             evalBody(m.methodBody, Some(args))
-          case f: Field => evalBody(f.value)
+          case f: Field => evalBody(f.value, Some(args))
         }
       case _ => sys.error("Object type is required here")
     }
