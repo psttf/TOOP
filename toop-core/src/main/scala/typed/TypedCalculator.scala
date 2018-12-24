@@ -89,38 +89,6 @@ class TypedCalculator {
       case Inr(Inr(Inl(ob))) => Coproduct[ContextType](ob)
     }
 
-  private def validateType(
-    typ: List[Either[Type, String]],
-    args: List[Either[Type, String]]
-  ): Unit = {
-    println(typ)
-    println(args)
-      typ match {
-        case Right(str1) :: xs =>
-          args match {
-            case Right(str2) :: ys =>
-              if (str1 != str2)
-                sys.error(s"Type $typ does not equal to $args type")
-              else ys match {
-                case list => validateType(xs, list)
-                case Nil =>
-              }
-            case Left(_) :: _ =>
-              sys.error(s"Type $typ does not equal to $args type")
-            case _ => sys.error(s"Type $str1 does not equal to $args type")
-          }
-        case Left(t1) :: xs =>
-          args match {
-            case Left(t2) :: ys =>
-              validateType(t1.args.toList, t2.args.toList)
-              validateType(xs, ys)
-            case Right(_) :: _ =>
-              sys.error(s"Type $typ does not equal to ${args.head} type")
-          }
-        case Nil => if (args.length > 1) sys.error(s"Type $typ does not equal to $args type")
-      }
-  }
-
   private def evalExpr(expression: Expression): ReturnType = {
     val ctx = evalExprBodies(expression.args)
     val key = context
@@ -147,7 +115,8 @@ class TypedCalculator {
               .getOrElse(sys.error(s"Field ${fu.propertyName} can't be found"))
             println(Type(Seq(Right("sss"))))
             println(fu.typ)
-            validateType(method.typ.args.toList, fu.typ.args.toList)
+            if (method.typ.args != fu.typ.args)
+              sys.error(s"Type ${method.typ.args} does not equal to ${fu.typ.args} type")
             val newValue = fu.value match {
               case e: Expression => inputValueFromReturn(evalExpr(e))
               case _             => IntValue(0)
@@ -162,7 +131,8 @@ class TypedCalculator {
           case Inr(Inl(ob)) =>
             val method: Property = findProperty(ob, mu.propertyName)
               .getOrElse(sys.error(s"Method ${mu.propertyName} can't be found"))
-            validateType(method.typ.args.toList, mu.typ.args.toList)
+            if (method.typ.args != mu.typ.args)
+              sys.error(s"Type ${method.typ.args} does not equal to ${mu.typ.args} type")
             val newMethod = method match {
               case m: Method => getNewMethod(m, ob)
               case _         => sys.error("expected to find method")
