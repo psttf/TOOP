@@ -1,35 +1,23 @@
 package controllers
 
-import java.util.concurrent.Executors
-
-import javax.inject.{Inject, Singleton}
 import expressions.{Parser, Semantic}
 import monix.execution.FutureUtils.extensions._
 import monix.execution.Scheduler
 import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc._
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Failure
 
-@Singleton
-class Application @Inject()(
+class ApplicationController(
   cc: ControllerComponents,
   config: Configuration,
   indexTemplate: views.html.index
-)(implicit assetsFinder: AssetsFinder)
+)(implicit assetsFinder: AssetsFinder, ec: ExecutionContext)
     extends AbstractController(cc) {
-
-  val ec: ExecutionContextExecutor =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
 
   implicit val scheduler: Scheduler = Scheduler(ec)
 
@@ -48,16 +36,20 @@ class Application @Inject()(
         val result = Future { Parser.parse(code).map(Semantic.eval) }
           .timeoutTo(
             config.get[Int]("parserFuture.timeoutInSeconds").seconds,
-            Future.failed(new TimeoutException)
+            Future.failed(
+              new TimeoutException(
+                "Ваше вычисление заняло слишком много времени и было остановлено."
+              )
+            )
           )
         result
           .map(parsedTerm => Ok(indexTemplate(form, Some(parsedTerm))))
           .recoverWith {
             case err: TimeoutException =>
-              Future { Ok(indexTemplate(form, Some(Failure(err)))) }
+              Future { Ok(indexTemplate.apply(form, Some(Failure(err)))) }
           }
       })
-      .getOrElse(Future { PreconditionFailed(indexTemplate(form, None)) })
+      .getOrElse(Future { PreconditionFailed(indexTemplate.apply(form, None)) })
   }
 
 }

@@ -1,14 +1,10 @@
 {
   "name": "TOOP",
-  "scripts": {
-  },
   "env": {
+    "HEROKU_APP_NAME": {
+      "required": true
+    }
   },
-  "formation": {
-  },
-  "addons": [
-    "heroku-postgresql"
-  ],
   "buildpacks": [
     {
       "url": "heroku/scala"
