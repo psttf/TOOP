@@ -52,10 +52,10 @@ object SigmaTypedParser extends App {
     case a: String => Coproduct[ParameterValue](a)
   }
 
-  type MethodCtxType = ObjectType :+: String :+: CNil
+  type MethodCtxType = SigmaBody :+: String :+: CNil
 
   implicit def cc(x: Object): MethodCtxType = x match {
-    case a: ObjectType => Coproduct[MethodCtxType](a)
+    case a: SigmaBody => Coproduct[MethodCtxType](a)
     case a: String => Coproduct[MethodCtxType](a)
   }
 
@@ -96,8 +96,13 @@ object SigmaTypedParser extends App {
   final case class Expression(innerExpr: Option[Expression], args: Seq[ExpressionBody]) extends Body with Argument
 
   sealed trait SigmaObject
-  final case class ObjectType(props: Seq[Property]) extends SigmaObject with Body
+  final case class SigmaBody(props: Seq[Property]) extends SigmaObject with Body
   final case class Sigma(properties: SigmaObject, call: Option[CutExpression]) extends SigmaObject
+
+  final case class Definition(defName: String, defType: Type)
+  final case class ObjType(objTypeName: String, definitions: Seq[Definition])
+
+  final case class TypedSigma(objTypes: Seq[ObjType], sigma: Sigma)
 
   val addOperation: P[Add] = P("+".!).map(_ => Add())
   val substituteOperation: P[Substitute] = P("-".!).map(_ => Substitute())
@@ -115,7 +120,7 @@ object SigmaTypedParser extends App {
   val function: P[Function] = P(parameter ~ operation ~ parameter).map {
     case (param1, op, param2) => Function(param1, op, param2)
   }
-  val typeName: P[String] = P(StringIn("Int", "Real", "Obj").!)
+  val typeName: P[String] = P(CharIn(('a' to 'z') ++ ('A' to 'Z')).rep(1).!)
   val typ: P[Type] = P(("(" ~ typ ~ ")" | typeName) ~ ("->" ~ ("(" ~ typ ~ ")" | typeName)).rep).map {
     case (inner, rest) => inner +: rest match {
       case x: Seq[Either[Type, String]] => Type(x)
@@ -143,15 +148,15 @@ object SigmaTypedParser extends App {
     case (prop, t, ctx, b) => Method(prop, t, ctx, b)
   }
   val property: P[Property] = P(method | field)
-  val objectType: P[ObjectType] = P("[" ~ property ~ ("," ~ property).rep ~ "]").map {
-    case (head, tail) => ObjectType(head +: tail)
+  val sigmaBody: P[SigmaBody] = P("[" ~ property ~ ("," ~ property).rep ~ "]").map {
+    case (head, tail) => SigmaBody(head +: tail)
   }
   val exprBody: P[ExpressionBody] = P(fieldUpdate | methodUpdate | function | call | parameter)
   val expr: P[Expression] = P(("(" ~ expr ~ ")").? ~ exprBody.rep(1)).map {
     case (inner, exp) => Expression(inner, exp)
   }
   val cutExpr: P[CutExpression] = P(fieldUpdate | methodUpdate | call)
-  val body: P[Body] = P(lambdaFunction | objectType | expr)
+  val body: P[Body] = P(lambdaFunction | sigmaBody | expr)
   val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ ":" ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
     case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
@@ -162,13 +167,26 @@ object SigmaTypedParser extends App {
   val call: P[Call] = P(contextName.? ~ "." ~ propertyName ~ arguments.?).map {
     case (сName, prop, args) => Call(сName, prop, args)
   }
-  val sigmaExpr: P[Sigma] = P((objectType | "(" ~ sigmaExpr ~ ")")  ~ cutExpr.?).map {
+  val sigmaExpr: P[Sigma] = P((sigmaBody | "(" ~ sigmaExpr ~ ")")  ~ cutExpr.?).map {
     case (props, trans) => Sigma(props, trans)
   }
+  val definition: P[Definition] = P(string ~ ":" ~ typ).map {
+    case (defName, defType) => Definition(defName, defType)
+  }
+  val definitions: P[Seq[Definition]] = P("[" ~ definition ~ ("," ~ definition).rep ~ "]").map {
+    case (head, tail) => head +: tail
+  }
+  val objType: P[ObjType] = P(typeName ~ definitions).map {
+    case (objTypeName, defs) => ObjType(objTypeName, defs)
+  }
+  val typedSigmaExpr: P[TypedSigma] = P("(" ~ objType.rep(1) ~ ")" ~ sigmaExpr).map {
+    case (objTypes, sig) => TypedSigma(objTypes, sig)
+  }
   val sigma: P[Sigma] = P(Start ~ sigmaExpr ~ End)
+  val typedSigma: P[TypedSigma] = P(Start ~ typedSigmaExpr ~ End)
 
 
-  val sigma1 = sigma.parse("(([x: Int := 0, move: Int -> Obj = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).move(-3)).x")
+  val sigma1 = typedSigma.parse("(Move[x: Int, move: Int -> self])(([x: Int := 0, move: Int -> Move = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).move(-3)).x")
   val sigma2 = sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals""")
 
   try {
@@ -184,7 +202,7 @@ object SigmaTypedParser extends App {
     println(methodUpdate.parse("outer.move: Obj <= @this => [x: Int := 5]"))
     println(arguments.parse("(-234.321, 5)"))
     println(call.parse(".someFunction(ass, 5, 3.2)"))
-    println(objectType.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
+    println(sigmaBody.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
     println(sigma1)
     println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
     println(sigma.parse("(((((([retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup).value: Int := 15).backup).value: Int := 25).retrieve).retrieve).value"))

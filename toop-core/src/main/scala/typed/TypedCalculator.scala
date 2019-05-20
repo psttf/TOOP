@@ -8,11 +8,11 @@ import scala.collection.mutable.ArrayBuffer
 
 class TypedCalculator {
 
-  type ReturnType = Int :+: Double :+: ObjectType :+: CNil
+  type ReturnType = Int :+: Double :+: SigmaBody :+: CNil
   implicit def resultType(x: Any): ReturnType = x match {
     case a: Int        => Coproduct[ReturnType](a)
     case a: Double     => Coproduct[ReturnType](a)
-    case a: ObjectType => Coproduct[ReturnType](a)
+    case a: SigmaBody => Coproduct[ReturnType](a)
   }
 
   type Numeric = Int :+: Double :+: CNil
@@ -22,12 +22,12 @@ class TypedCalculator {
   }
 
   type ContextType =
-    String :+: ObjectType :+: String :+: Boolean :+: Int :+: Double :+: IntValue :+: RealValue :+: Call :+: CNil
+    String :+: SigmaBody :+: String :+: Boolean :+: Int :+: Double :+: IntValue :+: RealValue :+: Call :+: CNil
   implicit def contextType(x: Any): ContextType = x match {
     case a: String     => Coproduct[ContextType](a)
     case a: Int        => Coproduct[ContextType](a)
     case a: Double     => Coproduct[ContextType](a)
-    case a: ObjectType => Coproduct[ContextType](a)
+    case a: SigmaBody => Coproduct[ContextType](a)
     case a: Boolean    => Coproduct[ContextType](a)
     case a: IntValue   => Coproduct[ContextType](a)
     case a: RealValue  => Coproduct[ContextType](a)
@@ -38,21 +38,21 @@ class TypedCalculator {
     mutable.HashMap.empty
 
   private def findProperty(
-    objectType: ObjectType,
-    name: String
+                            objectType: SigmaBody,
+                            name: String
   ): Option[Property] = {
     objectType.props.find(prop => prop.name == name)
   }
 
-  private def setProperty(ctx: ObjectType, newProp: Property): ObjectType = {
+  private def setProperty(ctx: SigmaBody, newProp: Property): SigmaBody = {
     val updatedProps = ctx.props.map {
       case prop if prop.name == newProp.name => newProp
       case prop                              => prop
     }
-    ObjectType(updatedProps)
+    SigmaBody(updatedProps)
   }
 
-  private def getNewMethod(method: Method, ctx: ObjectType): Method = {
+  private def getNewMethod(method: Method, ctx: SigmaBody): Method = {
     method.methodBody match {
       case e: Expression =>
         val body = evalExprBodies(e.args)
@@ -208,7 +208,7 @@ class TypedCalculator {
     body match {
       case l: Lambda      => evalLambda(l, args)
       case e: Expression  => evalExpr(e)
-      case ot: ObjectType => ot
+      case ot: SigmaBody => ot
       case i: IntValue    => i.int
       case r: RealValue   => r.real
     }
@@ -252,7 +252,7 @@ class TypedCalculator {
     parentCall: CutExpression
   ): ReturnType = {
     obj match {
-      case o @ ObjectType(_) => addToContext("_", o)
+      case o @ SigmaBody(_) => addToContext("_", o)
       case Sigma(properties, sigmaCall) =>
         sigmaCall.map(sc => {
           val ctx = evalSigma(properties, sc)
