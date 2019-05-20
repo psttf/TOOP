@@ -152,13 +152,14 @@ class TypedCalculator {
             }
           case _ => 0
         }
-      case param: Parameter => evalParam(param)
+      case param: ParameterType => evalParam(param)
       case call: Call       => methodCall(call)
     }
   }
 
-  private def evalParam(param: Parameter): ReturnType = {
-    if (param.methodCall.isDefined) {
+  private def evalParam(param: ParameterType): ReturnType = {
+    ???
+/*    if (param.methodCall.isDefined) {
       return methodCall(param.methodCall.get)
     }
     param.value match {
@@ -182,7 +183,7 @@ class TypedCalculator {
       param.value.select.head.asInstanceOf[String],
       sys.error(s"No param ${param.value} in context")
     )
-    arr.remove(arr.length - 1)
+    arr.remove(arr.length - 1)*/
   }
 
   private def evalLambda(
