@@ -159,7 +159,7 @@ object SigmaTypedParser extends App {
   val methodUpdate: P[MethodUpdate] = P(contextName.? ~ "." ~ propertyName ~ ":" ~ typ ~ "<=" ~ context ~ "=>" ~ body).map {
     case (cName, prop, t, ctx, b) => MethodUpdate(cName, prop, t, ctx, b)
   }
-  val argument: P[Argument] = P(lambdaFunction | inputValue | expr)
+  val argument: P[Argument] = P(lambdaFunction | expr | inputValue)
   val arguments: P[Seq[Argument]] = P("(" ~ argument ~ ("," ~ argument).rep ~ ")").map {
     case (head, tail) => head +: tail
   }
@@ -210,6 +210,15 @@ object SigmaTypedParser extends App {
     println(sigma.parse("""[numeral: Obj = @top => [zero: Obj = @numeral => [case: Obj -> Obj -> Obj = @zero => \(z: Obj) => \(s: Obj) => z, succ: Obj = @zero => (zero.case: Obj -> Obj -> Obj <= @tt => \(z: Obj) => \(s: Obj) => s.zero).val: Int := zero.val + 1, val: Int := 0, pred: Obj = @this => this.case(numeral.zero, \(x: Obj -> Obj) => x), add: Obj -> Int = @this => \(that: Obj) => this.case(that, \(x: Obj) => x.add(that.succ))], fib: Obj = @ numeral => \(n: Obj) => n.case(numeral.zero, \(x: Obj) => x.case(n, \(y: Obj) => (numeral.fib(x)).add(numeral.fib(y))))], main: Int = @ top => (top.numeral.fib(top.numeral.zero.succ.succ.succ)).val].main"""))
     println(sigma.parse("([a: Int := 0].a: Int := 5).a"))
     println(sigma.parse("[a: Int := 0]"))
+    println(call.parse("this.case(numeral.zero, \\(x: Obj -> Obj) => x)"))
+    println(method.parse("pred: Obj = @this => this.case(numeral.zero, \\(x: Obj -> Obj) => x)"))
+    println(argument.parse("numeral.zero"))
+    println(sigmaExpr.parse("[" +
+      "case: Obj -> Obj -> Obj = @zero => \\(z: Obj) => \\(s: Obj) => z," +
+      "succ: Obj = @zero => (zero.case: Obj -> Obj -> Obj <= @tt => \\(z: Obj) => \\(s: Obj) => s.zero).val: Int := zero.val + 1," +
+      "val: Int := 0," +
+      "pred: Obj = @this => this.case(numeral.zero, \\(x: Obj -> Obj) => x)," +
+      "add: Obj -> Int = @this => \\(that: Obj) => this.case(that, \\(x: Obj) => x.add(that.succ))]"))
   } catch {
     case e: ParseError => println(e)
   }
