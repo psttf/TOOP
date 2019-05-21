@@ -186,9 +186,10 @@ object SigmaTypedParser extends App {
 
 
   val sigma1 = typedSigma.parse("(Move[x: Int, move: Int -> self])(([x: Int := 0, move: Int -> Move = @this => \\(dx: Int) => this.x: Int := this.x + dx].move(5)).move(-3)).x")
-  val sigma2 = sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals""")
+  val sigma2 = typedSigma.parse("""(Calculator[arg: Real])(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals""")
 
   try {
+    println(sigma1)
     println(function.parse("x + 2"))
     println(typ.parse("Int -> (Int -> Int)"))
     println(lambdaFunction.parse("""\(x: Int) => \(y: Int) => x + y"""))
@@ -203,7 +204,6 @@ object SigmaTypedParser extends App {
     println(arguments.parse("(-234.321, 5)"))
     println(call.parse(".someFunction(ass, 5, 3.2)"))
     println(sigmaBody.parse("[ move_x: Real := 5, move_y: Int := 5 ]"))
-    println(sigma1)
     println(sigma.parse("""(([arg: Real := 0.0, acc: Real := 0.0, clear: Obj = @this => ((this.arg: Real := 0.0).acc: Real := 0.0).equals: Real <= @self => self.arg, enter: Real -> Obj = @this => \(n: Real) => this.arg: Real := n, add: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc + self.arg, sub: Obj = @this => (this.acc: Real := this.equals).equals: Real <= @self => self.acc - self.arg, equals: Real = @this => this.arg].enter(5.0)).add).equals"""))
     println(sigma.parse("(((((([retrieve: Obj = @s => s, backup: Obj = @b => b.retrive: Obj <= @b => b, value: Int := 10].backup).value: Int := 15).backup).value: Int := 25).retrieve).retrieve).value"))
     println(sigma.parse("""[zero: Obj = @global => [succ: Obj = @this => ((this.ifzero: Obj := global.false).pred: Obj := this).num: Int := this.num + 1, ifzero: Obj := global.true, num: Int := 0], true: Obj = @global => [then: Obj = @this => this, val: Obj = @this => this.then], false: Obj = @global => [else: Obj = @this => this, val: Obj = @this => this.else], prog: Int = @global => global.zero.succ.succ.succ.pred.num].prog"""))
@@ -226,7 +226,7 @@ object SigmaTypedParser extends App {
   println("__________")
   println("Calculation")
 
-/*  new TypedCalculator().evalMain(sigma1.get.value)*/
-  /*new TypedCalculator().evalMain(sigma2.get.value)*/
+  /*new TypedCalculator().evalMain(sigma1.get.value)*/
+  new TypedCalculator().evalMain(sigma2.get.value)
 
 }

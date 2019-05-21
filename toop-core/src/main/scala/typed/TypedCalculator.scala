@@ -10,8 +10,8 @@ class TypedCalculator {
 
   type ReturnType = Int :+: Double :+: SigmaBody :+: CNil
   implicit def resultType(x: Any): ReturnType = x match {
-    case a: Int        => Coproduct[ReturnType](a)
-    case a: Double     => Coproduct[ReturnType](a)
+    case a: Int       => Coproduct[ReturnType](a)
+    case a: Double    => Coproduct[ReturnType](a)
     case a: SigmaBody => Coproduct[ReturnType](a)
   }
 
@@ -22,24 +22,24 @@ class TypedCalculator {
   }
 
   type ContextType =
-    String :+: SigmaBody :+: String :+: Boolean :+: Int :+: Double :+: IntValue :+: RealValue :+: Call :+: CNil
+    String :+: Call :+: Int :+: Double :+: SigmaBody :+: IntValue :+: RealValue :+: StringValue :+: CNil
   implicit def contextType(x: Any): ContextType = x match {
-    case a: String     => Coproduct[ContextType](a)
-    case a: Int        => Coproduct[ContextType](a)
-    case a: Double     => Coproduct[ContextType](a)
-    case a: SigmaBody => Coproduct[ContextType](a)
-    case a: Boolean    => Coproduct[ContextType](a)
-    case a: IntValue   => Coproduct[ContextType](a)
-    case a: RealValue  => Coproduct[ContextType](a)
-    case a: Call       => Coproduct[ContextType](a)
+    case a: String      => Coproduct[ContextType](a)
+    case a: Call        => Coproduct[ContextType](a)
+    case a: Int         => Coproduct[ContextType](a)
+    case a: Double      => Coproduct[ContextType](a)
+    case a: SigmaBody   => Coproduct[ContextType](a)
+    case a: IntValue    => Coproduct[ContextType](a)
+    case a: RealValue   => Coproduct[ContextType](a)
+    case a: StringValue => Coproduct[ContextType](a)
   }
 
   val context: mutable.HashMap[String, ArrayBuffer[ContextType]] =
     mutable.HashMap.empty
 
   private def findProperty(
-                            objectType: SigmaBody,
-                            name: String
+    objectType: SigmaBody,
+    name: String
   ): Option[Property] = {
     objectType.props.find(prop => prop.name == name)
   }
@@ -110,13 +110,13 @@ class TypedCalculator {
       case fu: FieldUpdate =>
         val ctx = context(fu.contextName.getOrElse("_")).last
         ctx match {
-          case Inr(Inl(ob)) =>
+          case Inr(Inr(Inr(Inr(Inl(ob))))) =>
             val method: Property = findProperty(ob, fu.propertyName)
               .getOrElse(sys.error(s"Field ${fu.propertyName} can't be found"))
-            println(Type(Seq(Right("sss"))))
-            println(fu.typ)
             if (method.typ.args != fu.typ.args)
-              sys.error(s"Type ${method.typ.args} does not equal to ${fu.typ.args} type")
+              sys.error(
+                s"Type ${method.typ.args} does not equal to ${fu.typ.args} type"
+              )
             val newValue = fu.value match {
               case e: Expression => inputValueFromReturn(evalExpr(e))
               case _             => IntValue(0)
@@ -128,11 +128,13 @@ class TypedCalculator {
       case mu: MethodUpdate =>
         val ctx = context(mu.oldContextName.getOrElse("_")).last
         ctx match {
-          case Inr(Inl(ob)) =>
+          case Inr(Inr(Inr(Inr(Inl(ob))))) =>
             val method: Property = findProperty(ob, mu.propertyName)
               .getOrElse(sys.error(s"Method ${mu.propertyName} can't be found"))
             if (method.typ.args != mu.typ.args)
-              sys.error(s"Type ${method.typ.args} does not equal to ${mu.typ.args} type")
+              sys.error(
+                s"Type ${method.typ.args} does not equal to ${mu.typ.args} type"
+              )
             val newMethod = method match {
               case m: Method => getNewMethod(m, ob)
               case _         => sys.error("expected to find method")
@@ -152,38 +154,26 @@ class TypedCalculator {
             }
           case _ => 0
         }
+      case call: Call           => methodCall(call)
       case param: ParameterType => evalParam(param)
-      case call: Call       => methodCall(call)
     }
   }
 
   private def evalParam(param: ParameterType): ReturnType = {
-    ???
-/*    if (param.methodCall.isDefined) {
-      return methodCall(param.methodCall.get)
-    }
-    param.value match {
-      case Inr(Inl(str)) =>
+    param match {
+      case c @ Call(_, _, _) => methodCall(c)
+      case RealValue(rv)     => rv
+      case IntValue(iv)      => iv
+      case StringValue(str) =>
         val res = context(str).last
         res match {
-          case Inr(Inl(ob))                               => return ob
-          case Inr(Inr(Inr(Inr(Inl(int)))))               => return int
-          case Inr(Inr(Inr(Inr(Inr(Inl(d))))))            => return d
-          case Inr(Inr(Inr(Inr(Inr(Inr(Inl(iv)))))))      => return iv.int
-          case Inr(Inr(Inr(Inr(Inr(Inr(Inr(Inl(rv)))))))) => return rv.real
-          case _                                          => sys.error("Not a valid type")
-        }
-      case Inl(inp) =>
-        inp match {
-          case IntValue(i)  => return i
-          case RealValue(r) => return r
+          case Inr(Inr(Inr(Inl(double))))           => double
+          case Inr(Inr(Inl(int)))                   => int
+          case Inr(Inr(Inr(Inr(Inr(Inl(iv))))))     => iv.int
+          case Inr(Inr(Inr(Inr(Inr(Inr(Inl(d))))))) => d.real
+          case _                                    => sys.error("Not a valid type")
         }
     }
-    val arr: ArrayBuffer[ContextType] = context.getOrElse(
-      param.value.select.head.asInstanceOf[String],
-      sys.error(s"No param ${param.value} in context")
-    )
-    arr.remove(arr.length - 1)*/
   }
 
   private def evalLambda(
@@ -209,9 +199,10 @@ class TypedCalculator {
     body match {
       case l: Lambda      => evalLambda(l, args)
       case e: Expression  => evalExpr(e)
-      case ot: SigmaBody => ot
+      case ot: SigmaBody  => ot
       case i: IntValue    => i.int
       case r: RealValue   => r.real
+      case s: StringValue => s.string
     }
   }
 
@@ -227,7 +218,7 @@ class TypedCalculator {
     val arr = context.getOrElse(key, sys.error("Cannot find in context"))
     val ctx = arr.last
     ctx match {
-      case Inr(Inl(ob)) =>
+      case Inr(Inr(Inr(Inr(Inl(ob))))) =>
         val propToExecute: Option[Property] =
           findProperty(ob, methodCall.propertyName)
         val prop = propToExecute.getOrElse(
@@ -277,7 +268,8 @@ class TypedCalculator {
     }
   }
 
-  def evalMain(sigma: Sigma): String = {
+  def evalMain(typedSigma: TypedSigma): String = {
+    val sigma = typedSigma.sigma
     val res = sigma.call.fold(sigma.toString) { sigmaCall =>
       {
         val ctx = evalSigma(sigma.properties, sigmaCall)
