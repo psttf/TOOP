@@ -81,4 +81,3 @@ lazy val toopHTTP4S = (project in file("toop-http4s"))
     Compile/mainClass := Some("server.Main")
   )
   .dependsOn(toopCore)
-

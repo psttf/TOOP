@@ -19,6 +19,9 @@ import org.http4s.server.blaze._
 
 import expressions.{Parser, Semantic}
 
+import org.http4s.server.middleware._
+
+
 object Main extends IOApp {
     val jsonApp = HttpRoutes.of[IO] {
         case req @ POST -> Root / "eval" => for {
@@ -32,12 +35,20 @@ object Main extends IOApp {
         } yield (processed)
     }.orNotFound
 
+    val corsConfig = CORSConfig(
+        anyOrigin = true,
+        anyMethod = true,
+        allowCredentials = true,
+        maxAge = 1 * 24 * 60 * 60,
+    )
+
     def run(args: List[String]): IO[ExitCode] = {
-        val port = args(0).toInt
+        val port = sys.env("PORT").toInt
+        val service = CORS(jsonApp, corsConfig)
 
         return BlazeServerBuilder[IO]
             .bindHttp(port, "0.0.0.0")
-            .withHttpApp(jsonApp)
+            .withHttpApp(service)
             .resource
             .use(_ => IO.never)
             .as(ExitCode.Success)

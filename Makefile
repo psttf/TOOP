@@ -10,3 +10,6 @@ heroku_release:
 
 heroku_log:
 	heroku logs -a $(HEROKU_APP) --tail
+
+heroku_restart:
+	heroku restart -a $(HEROKU_APP)
