@@ -8,5 +8,7 @@ case class Lambda(override val variable:Variable, override val body:Term) extend
 
   override def toString = "(\\"+variable+"=>"+body+")"
 
+  override def toFormat: String = s"(\\${variable.toFormat} => ${body.toFormat})"
+
   //lazy override val FV = body.FV - variable.name
 }

@@ -5,4 +5,5 @@ package expressions
  */
 trait Term {
   val FV : Set[String]
+  def toFormat: String = toString
 }

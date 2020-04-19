@@ -6,5 +6,7 @@ package expressions
 case class Number(n:Int) extends Term {
   override def toString = n.toString
 
+  override def toFormat: String = if (n < 0) s"(0-${-n})" else n.toString
+
   lazy override val FV = Set[String]()
 }

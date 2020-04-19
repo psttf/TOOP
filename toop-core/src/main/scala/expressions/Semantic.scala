@@ -63,7 +63,7 @@ object Semantic {
 
   def genName(name:String, names:Set[String]):String = {
     def genName(name:String, names:Set[String], i:Int):String = {
-      val newName = "$"+name+i
+      val newName = "_"+name+i
       if(!(names contains newName))
         newName
       else

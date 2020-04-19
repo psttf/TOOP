@@ -8,5 +8,7 @@ case class Sigma(override val variable:Variable, override val body:Term) extends
 
   override def toString = "(@"+variable+"=>"+body+")"
 
+  override def toFormat: String = s"@${variable.toFormat} => ${body.toFormat}"
+
   //lazy override val FV = body.FV - variable.name
 }

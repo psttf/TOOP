@@ -6,5 +6,7 @@ package expressions
 case class MethodInvocation(obj:Term, label:String) extends Term {
   override def toString = "{"+obj+"."+label+"}"
 
+  override def toFormat: String = s"(${obj.toFormat}.$label)"
+
   lazy override val FV = obj.FV
 }

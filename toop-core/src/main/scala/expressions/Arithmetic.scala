@@ -7,5 +7,9 @@ trait Arithmetic extends Term {
   lazy override val FV = t1.FV union t2.FV
 }
 
-case class Add(t1 : Term, t2 : Term) extends Arithmetic
-case class Subtract(t1 : Term, t2 : Term) extends Arithmetic
+case class Add(t1 : Term, t2 : Term) extends Arithmetic {
+  override def toFormat = s"(${t1.toFormat} + ${t2.toFormat})"
+}
+case class Subtract(t1 : Term, t2 : Term) extends Arithmetic {
+  override def toFormat = s"(${t1.toFormat} - ${t2.toFormat})"
+}

@@ -29,10 +29,10 @@ object Main extends IOApp {
                 err => BadRequest(ReduceError(err.toString, Vector()).asJson),
                 parsed => Semantic.eval(parsed) match {
                     case SemanticState(Right(term), h) => Ok(
-                        Reduced(term.toString, h.map(_.toString)).asJson
+                        Reduced(term.toFormat, h.map(_.toFormat)).asJson
                     )
                     case SemanticState(Left(err), h) => BadRequest(
-                        ReduceError(err.toString, h.map(_.toString)).asJson
+                        ReduceError(err.toString, h.map(_.toFormat)).asJson
                     )
                 }
             )

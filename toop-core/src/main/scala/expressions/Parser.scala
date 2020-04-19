@@ -55,7 +55,7 @@ object Parser extends StandardTokenParsers with ImplicitConversions with Packrat
   lazy val fieldUpdate = {
 //    log(
       (expr<~".")~(ident<~":=")~expr ^^  {case t~l~f =>
-        MethodUpdate(t, l, f/*Sigma(Variable(Semantic.genName("", Semantic.FV(f))), f)*/)
+        MethodUpdate(t, l, Sigma(Variable(Semantic.genName("", Semantic.FV(f))), f))
       }
 //    )("fieldUpdate")
   }
