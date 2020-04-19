@@ -114,7 +114,7 @@ object Semantic {
           oV <- eval1(o)
           //TODO поменять эквивалентость на сравнение ссылок. Если объект был изменён, то и ссылка на него изменится
         ) yield if (o eq oV) oV match {
-          case obj@ObjectFormation(methods) =>
+          case ObjectFormation(methods) =>
             if (methods.contains(l))
               methods(l) match {
                 case Sigma(v, b) => substitution(o, v, b)
