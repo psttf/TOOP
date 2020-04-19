@@ -2,7 +2,7 @@ package expressions
 
 import cats.syntax.either._
 
-case class SemanticState(term: Either[Exception, Term], history: List[Term])
+case class SemanticState(term: Either[Exception, Term], history: Vector[Term])
 
 
 object Semantic {
@@ -87,7 +87,7 @@ object Semantic {
       case error => error
     }
 
-    val initState = SemanticState(Either.right(t), List(t))
+    val initState = SemanticState(Either.right(t), Vector(t))
     eval(initState, t)
   }
 

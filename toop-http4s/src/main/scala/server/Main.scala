@@ -25,21 +25,16 @@ object Main extends IOApp {
     val jsonApp = HttpRoutes.of[IO] {
         case req @ POST -> Root / "eval" => for {
             code <- req.as[Code]
-            processed <- Parser.parse(code.code)
-            .map(Semantic.eval(_) match {
-                case SemanticState(term, history) => term match {
-                    case Right(t) => Ok(Reduced(
-                        t.toString,
-                        history.map(_.toString),
-                    ).asJson)
-                    case Left(err) => BadRequest(ReduceError(
-                        err.toString,
-                        history.map(_.toString)
-                    ).asJson)
+            processed <- Parser.parse(code.code).fold(
+                err => BadRequest(ReduceError(err.toString, Vector()).asJson),
+                parsed => Semantic.eval(parsed) match {
+                    case SemanticState(Right(term), h) => Ok(
+                        Reduced(term.toString, h.map(_.toString)).asJson
+                    )
+                    case SemanticState(Left(err), h) => BadRequest(
+                        ReduceError(err.toString, h.map(_.toString)).asJson
+                    )
                 }
-            }).fold(
-                err => BadRequest(ReduceError(err.toString, List()).asJson),
-                res => res
             )
         } yield processed
     }.orNotFound

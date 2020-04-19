@@ -5,7 +5,7 @@ import java.io.File
 import scala.concurrent.{Future, TimeoutException}
 import scala.io.Source
 import scala.util.Failure
-import expressions.{Parser, Semantic}
+import expressions.{Parser, Semantic, SemanticState}
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -34,8 +34,14 @@ object Main {
     parser.parse(args, Config()) match {
       case Some(config) => {
         val content = Source.fromFile(config.files(0)).mkString
-        val result = Parser.parse(content).map(Semantic.eval)
-        result.fold(err => println(Console.RED + err + Console.RESET), res => println(res))
+        Parser.parse(content)
+          .fold(
+            err => println(Console.RED + err + Console.RESET),
+            term => Semantic.eval(term) match {
+              case SemanticState(Right(term), _) => println(term)
+              case SemanticState(Left(err), _) => println(Console.RED + err + Console.RESET)
+            }
+          )
       }
 
       case None => println("No arguments given")
