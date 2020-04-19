@@ -4,6 +4,7 @@ import play.sbt.PlayScala
 val scalaVersionValue = "2.12.10"
 val defaultScalacOptions = Seq("-deprecation", "-encoding", "utf-8")
 
+val cats = "org.typelevel" %% "cats-effect" % "2.0.0"
 val parserCombinators = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.0"
 val specs2_core = "org.specs2" %% "specs2-core" % "4.2.0"
 val monix = "io.monix" %% "monix" % "2.3.3"
@@ -14,7 +15,6 @@ val jquery = "org.webjars" % "jquery" % "3.3.1"
 val playCirce = "com.dripower" %% "play-circe" % "2611.0"
 val circeGeneric = "io.circe" %% "circe-generic" % "0.10.0"
 val http4s = Seq(
-  "org.typelevel" %% "cats-effect" % "2.0.0",
   "io.circe" %% "circe-core" % "0.11.1",
   "io.circe" %% "circe-generic" % "0.11.1",
   "io.circe" %% "circe-parser" % "0.11.1",
@@ -31,6 +31,7 @@ lazy val toopCore = (project in file("toop-core"))
     version := "1.0",
     scalaVersion := scalaVersionValue,
     libraryDependencies ++= Seq(
+      cats,
       parserCombinators,
       specs2_core % Test
     ),

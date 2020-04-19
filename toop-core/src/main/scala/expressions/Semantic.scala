@@ -1,5 +1,10 @@
 package expressions
 
+import cats.syntax.either._
+
+case class SemanticState(term: Either[Exception, Term], history: List[Term])
+
+
 object Semantic {
 
   def FV(t:Term):Set[String] = t.FV
@@ -67,121 +72,110 @@ object Semantic {
     genName(name, names, 0)
   }
 
-  def eval(t:Term):Term = {
-    def eval(t:Term, last:Term):Term = {
-      val step = eval1(t)
-      if (step eq last)
-        last
-      else
-        eval(step, step)
+  def eval(t: Term): SemanticState = {
+    def eval(state: SemanticState, last: Term): SemanticState = state match {
+      case SemanticState(Right(t), history) =>
+        eval1(t) match {
+          case rStep@Right(step) =>
+            if (step eq last) state
+            else eval(
+              SemanticState(rStep, history :+ step),
+              step
+            )
+          case error => SemanticState(error, history)
+        }
+      case error => error
     }
-    eval(t, t)
+
+    val initState = SemanticState(Either.right(t), List(t))
+    eval(initState, t)
   }
 
-  def eval1(t:Term):Term = t match {
-    case Application(t1, t2) =>
-      val t1V = eval1(t1)
-      if (t1V ne t1)
-        Application(t1V, t2)
-      else {
-        val t2V = eval1(t2)
-        if (t2V ne t2)
-          Application(t1V, t2V)
-        else
-          t1V match {
-            case Lambda(v, b) =>
-              substitution(t2V, v, b)
-            case _ => t//throw new IllegalStateException
-        }
-      }
-
-    case MethodInvocation(o, l) =>
-      //TOOD: Можно оптимизировать, и сразу начать новый цикл, а не возвращаться на уровень выше
-      //println("invoke", o, l)
-      val oV = eval1(o)
-      //TODO поменять эквивалентость на сравнение ссылок. Если объект был изменён, то и ссылка на него изменится
-      if (o eq oV)
-      oV match {
-        case obj @ ObjectFormation(methods) =>
-          if (methods.contains(l))
-            methods(l)  match {
-              case Sigma(v, b) =>
-                substitution(o, v, b)
-              case _ => throw new IllegalStateException
+  def eval1(t: Term): Either[Exception, Term] =
+    try {
+      t match {
+        case Application(t1, t2) => eval1(t1).flatMap(t1V =>
+          if (t1V ne t1)
+            Either.right(Application(t1V, t2))
+          else for (
+            t2V <- eval1(t2)
+          ) yield
+            if (t2V ne t2)
+              Application(t1V, t2V)
+            else t1V match {
+              case Lambda(v, b) => substitution(t2V, v, b)
+              case _ => t //throw new IllegalStateException
             }
-          else
-            throw new IllegalAccessException
+        )
 
-        case _ if oV == o =>
-          println(o)
-          println(oV)
-          throw new IllegalStateException
-      } else
-        MethodInvocation(oV, l)
+        case MethodInvocation(o, l) => for (
+          //TOOD: Можно оптимизировать, и сразу начать новый цикл, а не возвращаться на уровень выше
+          //println("invoke", o, l)
+          oV <- eval1(o)
+          //TODO поменять эквивалентость на сравнение ссылок. Если объект был изменён, то и ссылка на него изменится
+        ) yield if (o eq oV) oV match {
+          case obj@ObjectFormation(methods) =>
+            if (methods.contains(l))
+              methods(l) match {
+                case Sigma(v, b) => substitution(o, v, b)
+                case _ => throw new IllegalStateException
+              }
+            else throw new IllegalAccessException
 
-    case MethodUpdate(o, l, m) =>
-      //println("update!", o , l , m)
-      val oV = eval1(o)
-      if (oV eq o) {
-        val mV = m // eval1(m)
-        if (mV ne m)
-          MethodUpdate(oV, l, mV)
-        else
-          (oV, mV) match {
-            case (ObjectFormation(methods), Sigma(_, _)) =>
-              ObjectFormation(methods + ((l, m)))
-            case (ObjectFormation(methods), field) =>
-              ObjectFormation(methods + (
-                (
-                  l,
-                  Sigma(Variable(Semantic.genName("", Semantic.FV(field))), field)
-                )))
-            case _ => throw new IllegalArgumentException
-          }
+          case _ if oV == o =>
+            println(o)
+            println(oV)
+            throw new IllegalStateException
+        } else MethodInvocation(oV, l)
+
+        case MethodUpdate(o, l, m) => for (
+          //println("update!", o , l , m)
+          oV <- eval1(o)
+        ) yield
+          if (oV eq o) {
+            val mV = m // eval1(m)
+            if (mV ne m)
+              MethodUpdate(oV, l, mV)
+            else (oV, mV) match {
+                case (ObjectFormation(methods), Sigma(_, _)) => ObjectFormation(methods + ((l, m)))
+                case (ObjectFormation(methods), field) => ObjectFormation(
+                  methods + ((
+                    l, Sigma(Variable(Semantic.genName("", Semantic.FV(field))), field)
+                  ))
+                )
+                case _ => throw new IllegalArgumentException
+              }
+          } else MethodUpdate(oV, l, m)
+
+        case Add(t1, t2) => eval1(t1).flatMap(t1V =>
+          //TODO: заменил == на eq
+          if (t1 eq t1V) for (
+            t2V <- eval1(t2)
+          ) yield
+            //TODO заменил == на eq
+            if (t2V eq t2) (t1V, t2V) match {
+              case (Number(n1), Number(n2)) => Number(n1 + n2)
+              case _ => throw new IllegalArgumentException
+            } else Add(t1V, t2V)
+          else Either.right(Add(t1V, t2))
+        )
+
+        case Subtract(t1, t2) => eval1(t1).flatMap(t1V =>
+          if (t1 == t1V) for (
+            t2V <- eval1(t2)
+          ) yield
+            if (t2V == t2) (t1V, t2V) match {
+              case (Number(n1), Number(n2)) => Number(n1 - n2)
+              case _ => throw new IllegalArgumentException
+            } else Subtract(t1V, t2V)
+          else Either.right(Subtract(t1V, t2))
+        )
+
+        case _ => Either.right(t)
       }
-      else
-        MethodUpdate(oV, l, m)
-
-    case Add(t1, t2) =>
-      val t1V = eval1(t1)
-      //TODO: заменил == на eq
-      if (t1 eq t1V)
-      {
-        val t2V = eval1(t2)
-        //TODO заменил == на eq
-        if (t2V eq t2)
-        {
-          (t1V, t2V) match {
-            case (Number(n1), Number(n2)) =>
-              Number(n1+n2)
-            case _ => throw new IllegalArgumentException
-          }
-        }
-        else
-        Add(t1V, t2V)
-      } else
-      Add(t1V, t2)
-
-    case Subtract(t1, t2) =>
-      val t1V = eval1(t1)
-      if (t1 == t1V)
-      {
-        val t2V = eval1(t2)
-        if (t2V == t2)
-        {
-          (t1V, t2V) match {
-            case (Number(n1), Number(n2)) =>
-              Number(n1-n2)
-            case _ => throw new IllegalArgumentException
-          }
-        }
-        else
-        Subtract(t1V, t2V)
-      } else
-      Subtract(t1V, t2)
-
-    case _ => t
-  }
+    } catch {
+      case e: Exception => Either.left(e)
+    }
 }
 
 

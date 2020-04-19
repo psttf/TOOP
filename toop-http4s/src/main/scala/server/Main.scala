@@ -6,7 +6,6 @@ import responses._
 import cats.effect._
 import cats.implicits._
 
-import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
 
@@ -17,7 +16,7 @@ import org.http4s.implicits._
 
 import org.http4s.server.blaze._
 
-import expressions.{Parser, Semantic}
+import expressions.{Parser, Semantic, SemanticState}
 
 import org.http4s.server.middleware._
 
@@ -27,12 +26,22 @@ object Main extends IOApp {
         case req @ POST -> Root / "eval" => for {
             code <- req.as[Code]
             processed <- Parser.parse(code.code)
-            .map(Semantic.eval _)
-            .fold(
-                err => BadRequest(ReduceError(err.toString).asJson),
-                res => Ok(Reduced(res.toString).asJson),
+            .map(Semantic.eval(_) match {
+                case SemanticState(term, history) => term match {
+                    case Right(t) => Ok(Reduced(
+                        t.toString,
+                        history.map(_.toString),
+                    ).asJson)
+                    case Left(err) => BadRequest(ReduceError(
+                        err.toString,
+                        history.map(_.toString)
+                    ).asJson)
+                }
+            }).fold(
+                err => BadRequest(ReduceError(err.toString, List()).asJson),
+                res => res
             )
-        } yield (processed)
+        } yield processed
     }.orNotFound
 
     val corsConfig = CORSConfig(
@@ -46,7 +55,7 @@ object Main extends IOApp {
         val port = sys.env("PORT").toInt
         val service = CORS(jsonApp, corsConfig)
 
-        return BlazeServerBuilder[IO]
+        BlazeServerBuilder[IO]
             .bindHttp(port, "0.0.0.0")
             .withHttpApp(service)
             .resource
