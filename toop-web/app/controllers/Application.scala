@@ -3,7 +3,7 @@ package controllers
 import java.util.concurrent.Executors
 
 import data.json._
-import expressions.{Parser, Semantic, Term}
+import expressions.{Parser, Semantic, Term, SemanticState}
 import io.circe.syntax._
 import javax.inject.{Inject, Singleton}
 import models.{EvalFailure, EvalSuccess}
@@ -69,7 +69,10 @@ class Application @Inject()(
     form("code").value
       .map (
         code =>
-          Future { Parser.parse(code).map(Semantic.eval)}
+          Future { Parser.parse(code).map(Semantic.eval(_) match {
+            case SemanticState(Right(term), _) => term
+            case SemanticState(Left(err), _) => throw err
+          })}
             .timeoutTo(
               config.get[Int]("parserFuture.timeoutInSeconds").seconds,
               Future.failed(new TimeoutException)

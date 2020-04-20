@@ -22,15 +22,14 @@ class SemanticParserSpec extends Specification {
           ).value<=@s3=>15
         ).backup).value<=@s3=>25).retrive.retrive.value"""//.retrive"""//.retrive<=@s1=>s2]"
 
-      Semantic.eval(Parser parse restorable match {case Success(t) => t}).toString must
-        beEqualTo("10")
-
+      Semantic.eval(Parser parse restorable match {case Success(t) => t}).term.map(_.toString) must
+        beEqualTo(Right("10"))
     }
 
     "eval abstraction application" in {
       val o1 = "(\\x=>\\y=>\\z=>x (y z)) x y z"
-      Semantic.eval(Parser parse o1 match {case Success(t) => t}).toString must
-        beEqualTo("(x (y z))")
+      Semantic.eval(Parser parse o1 match {case Success(t) => t}).term.map(_.toString) must
+        beEqualTo(Right("(x (y z))"))
     }
 
     "eval Fibonacci" in {
@@ -63,7 +62,7 @@ class SemanticParserSpec extends Specification {
           |)
           |""".stripMargin
       val result = Semantic.eval(Parser parse code match {case Success(t) => t})
-      result.toString must beEqualTo("1")
+      result.term.map(_.toString) must beEqualTo(Right("1"))
     }
 
   }
