@@ -1,6 +1,6 @@
 # Project has Moved
 
-Ptoject's new home is at https://gitlab.com/skibcsit/TOOP
+Project's new home is at https://gitlab.com/skibcsit/TOOP
 
 ---
 
